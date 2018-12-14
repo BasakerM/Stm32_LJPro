@@ -1,0 +1,26 @@
+#ifndef _gpio_h
+#define _gpio_h
+
+#include <stm32f10x.h>
+
+#define GPIO_RCC_LED RCC_APB2Periph_GPIOB
+#define GPIO_RCC_RELAY RCC_APB2Periph_GPIOB
+#define GPIOX_LED GPIOB
+#define GPIOX_RELAY GPIOB
+#define GPIO_PIN_LED GPIO_Pin_11
+#define GPIO_PIN_RELAY GPIO_Pin_10
+
+#define GPIO_RCC GPIO_RCC_LED|GPIO_RCC_RELAY
+#define GPIOX GPIOB
+#define GPIO_PIN GPIO_PIN_LED|GPIO_PIN_RELAY
+
+#define LED_ON GPIO_ResetBits(GPIOX_LED,GPIO_PIN_LED)
+#define LED_OFF GPIO_SetBits(GPIOX_LED,GPIO_PIN_LED)
+#define LED_F GPIO_WriteBit(GPIOX_LED,GPIO_PIN_LED,(BitAction)(1-GPIO_ReadOutputDataBit(GPIOX_LED,GPIO_PIN_LED)))
+#define RELAY_ON GPIO_ResetBits(GPIOX_RELAY,GPIO_PIN_RELAY)
+#define RELAY_OFF GPIO_SetBits(GPIOX_RELAY,GPIO_PIN_RELAY)
+#define RELAY_F GPIO_WriteBit(GPIOX_RELAY,GPIO_PIN_RELAY,1-GPIO_ReadOutputDataBit(GPIOX_RELAY,GPIO_PIN_RELAY))
+
+void gpio_init(void);	//GPIO³õÊ¼»¯º¯Êý
+
+#endif
