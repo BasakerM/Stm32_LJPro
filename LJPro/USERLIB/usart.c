@@ -35,12 +35,24 @@ void usart_init(void)
 }
 
 //
+//	由于串口的接收未使用中断方式,所以采用该方式判断串口是否有数据
+//	以下的实现仅为示例,并非一个完整的函数
+//	dat : 要接收的数据(一个字节)
+//
+void usart_rec_byte(USART_TypeDef* USARTx,char* dat)
+{
+	if(USART_GetFlagStatus(USARTx,USART_FLAG_RXNE))
+	{
+		*dat = USART_ReceiveData(USARTx);
+	}
+
+//
 //	往 USART 发送指定长度的数据
 //	dat : 数据缓冲区
 //	len : 要发送的数据长度
 //
 
-void usart_send(USART_TypeDef* USARTx,unsigned char* dat,unsigned char len)
+void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len)
 {
 	while(len--)
 	{
@@ -51,7 +63,7 @@ void usart_send(USART_TypeDef* USARTx,unsigned char* dat,unsigned char len)
 
 //
 //	往 USART 发送字符串
-//	dat : 字符串缓冲区
+//	str : 字符串缓冲区
 //
 
 void usart_send_str(USART_TypeDef* USARTx,char* str)

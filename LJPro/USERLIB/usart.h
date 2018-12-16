@@ -12,10 +12,11 @@
 #define USART_GPIO_M GPIOA
 #define USART_PIN_TX_M GPIO_Pin_9
 #define USART_PIN_RX_M GPIO_Pin_10
-#define USART_M USART1
+#define USART_M USART1 //调用USART的函数时使用该宏
 
 void usart_init(void);
-void usart_send(USART_TypeDef* USARTx,unsigned char* dat,unsigned char len);
+void usart_rec_byte(USART_TypeDef* USARTx,char* dat);
+void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len);
 void usart_send_str(USART_TypeDef* USARTx,char* str);
 
 #endif
