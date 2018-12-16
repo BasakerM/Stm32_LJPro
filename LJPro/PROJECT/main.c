@@ -2,12 +2,12 @@
 #include "drive.h"
 
 unsigned short crc(unsigned char* buff,unsigned char len);
-char usart_getdat(USART_TypeDef* USARTx,char* usart_buff,unsigned char index);
+char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
 unsigned char optin_code_get(unsigned char code);
-void usart_parsedat(char* usart_dat,unsigned char* addr_flag,unsigned char* code_flag);
+void usart_parsedat(unsigned char usart_dat,unsigned char* addr_flag,unsigned char* code_flag);
 void flow(unsigned char* a_flag,unsigned char* c_flag);
 
-char usart_Buff_Send[16] = 0x00;	//串口发送缓冲区
+char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
 unsigned char usart_dat_rec = 0x00;
 unsigned char addr_flag = 0x00;	//地址标志
 unsigned char code_flag = 0x00;	//操作码标志
@@ -18,25 +18,29 @@ int main()
 
 	while(1)
 	{
+		//以下串口方式未使用循环,最深为三层嵌套判断,只占用极少的 cpu 时间
 		if(usart_getdat(USART_M,&usart_dat_rec))	//检测并接收串口数据
-			usart_parsedat(usart_dat_rec,&addr_flag,&code_flag);	//解析串口数据,若接收到规定的数据包则将操作码赋给flow_flag
-		flow(addr_flag,code_flag);	//执行流程
+			usart_parsedat(usart_dat_rec,&addr_flag,&code_flag);	//解析串口数据,若接收到规定的数据包则提取目标地址及操作码
+		//执行流程
+		flow(&addr_flag,&code_flag);
 	}
 }
 
 //
 //	根据操作码选择动作
+//	a_flag : 目标地址
+//	c_flag : 操作码
 //
 void flow(unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(*c_flag)
 	{
 		case 0x00: break;	//空闲状态
-		case 0xB1: door_user(*a_flag,open); break;	//用户开门操作码
-		case 0xB2: door_user(*a_flag,close); break;	//用户关门操作码
-		case 0xB3: door_manage(*a_flag,open); break;	//管理员开门操作码
-		case 0xB4: door_manage(*a_flag,close); break;	//管理员关门操作码
-		case 0xD1: weigh_get(*a_flag) break;	//称重
+		case 0xB1: door_user(a_flag,c_flag,open); break;	//用户开门操作码
+		case 0xB2: door_user(a_flag,c_flag,close); break;	//用户关门操作码
+		case 0xB3: door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
+		case 0xB4: door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
+		case 0xD1: weigh_get(a_flag,c_flag); break;	//称重
 	}
 }
 
@@ -45,8 +49,13 @@ unsigned short crc_result = 0x0000;	//crc的计算结果
 unsigned char datapack_index = 0;	//数据包的下标
 //
 //	解析来自串口的数据,只提取规定的协议
+//	使用该方法尽量减少接收和解析串口数据时对cpu的占用时间
+//	解析完成后将给出数据包的目标地址和操作码
+//	usart_dat : 当前接收到的串口数据
+//	a_flag : 用于存储目标地址的变量
+//	c_flag : 用于存储操作码的变量
 //
-void usart_parsedat(char* usart_dat,unsigned char* a_flag,unsigned char* c_flag)
+void usart_parsedat(unsigned char usart_dat,unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(datapack_index)
 	{
@@ -75,6 +84,7 @@ void usart_parsedat(char* usart_dat,unsigned char* a_flag,unsigned char* c_flag)
 				{
 					*a_flag = crc_buff[2];	//获取目标地址
 					*c_flag = crc_buff[3];	//获取操作码
+					datapack_index = 0;
 				}
 				else { crc_result = 0x0000; datapack_index = 0; } break;
 	}
@@ -82,6 +92,8 @@ void usart_parsedat(char* usart_dat,unsigned char* a_flag,unsigned char* c_flag)
 
 //
 //	查询操作码,若无规定的操作码则返回0x00
+//	code : 要查询的操作码
+//	return : 返回已规定的操作码或返回0x00
 //
 unsigned char optin_code_get(unsigned char code)
 {
@@ -101,13 +113,16 @@ unsigned char optin_code_get(unsigned char code)
 }
 
 //
-//	接收串口数据存至接收缓冲区
+//	接收串口数据
+//	USARTx : 串口号
+//	usart_dat : 用于存储该次串口数据的变量
+//	return : 若有串口数据则返回 1 ,否则返回 0
 //
-char usart_getdat(USART_TypeDef* USARTx,char* usart_buff,unsigned char index)
+char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat)
 {
 	if(USART_GetFlagStatus(USARTx,USART_FLAG_RXNE))
 	{
-		usart_buff[index] = USART_ReceiveData(USARTx);
+		*usart_dat = USART_ReceiveData(USARTx);
 		return 1;
 	}
 	return 0;

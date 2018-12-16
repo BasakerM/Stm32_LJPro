@@ -45,13 +45,13 @@ void usart_rec_byte(USART_TypeDef* USARTx,char* dat)
 	{
 		*dat = USART_ReceiveData(USARTx);
 	}
+}
 
 //
 //	往 USART 发送指定长度的数据
 //	dat : 数据缓冲区
 //	len : 要发送的数据长度
 //
-
 void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len)
 {
 	while(len--)
@@ -65,7 +65,6 @@ void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len)
 //	往 USART 发送字符串
 //	str : 字符串缓冲区
 //
-
 void usart_send_str(USART_TypeDef* USARTx,char* str)
 {
 	while(*str != '\0')
