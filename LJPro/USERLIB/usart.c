@@ -39,7 +39,7 @@ void usart_init(void)
 //	以下的实现仅为示例,并非一个完整的函数
 //	dat : 要接收的数据(一个字节)
 //
-void usart_rec_byte(USART_TypeDef* USARTx,char* dat)
+void usart_rec_byte(USART_TypeDef* USARTx,unsigned char* dat)
 {
 	if(USART_GetFlagStatus(USARTx,USART_FLAG_RXNE))
 	{
@@ -52,7 +52,7 @@ void usart_rec_byte(USART_TypeDef* USARTx,char* dat)
 //	dat : 数据缓冲区
 //	len : 要发送的数据长度
 //
-void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len)
+void usart_send(USART_TypeDef* USARTx,unsigned char* dat,unsigned char len)
 {
 	while(len--)
 	{
@@ -65,7 +65,7 @@ void usart_send(USART_TypeDef* USARTx,char* dat,unsigned char len)
 //	往 USART 发送字符串
 //	str : 字符串缓冲区
 //
-void usart_send_str(USART_TypeDef* USARTx,char* str)
+void usart_send_str(USART_TypeDef* USARTx,unsigned char* str)
 {
 	while(*str != '\0')
 	{

@@ -3,6 +3,7 @@
 ".\usart.o"
 ".\systick.o"
 ".\drive.o"
+".\motor.o"
 ".\core_cm3.o"
 ".\stm32f10x_it.o"
 ".\system_stm32f10x.o"
