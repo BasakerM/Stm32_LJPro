@@ -1,5 +1,4 @@
-#include "drive.h"
-#include "usart.h"
+#include "function.h"
 
 //
 //	瓶子部分的功能
@@ -122,7 +121,7 @@ void weight_paper(unsigned char* a_flag,unsigned char* c_flag)
 }
 
 //
-//	往串口发送应答
+//	往串口发送应答(该函数也用于发送数据包内容皆位0的指令,例如光电信号的反馈)
 //	buff : 发送缓冲区
 //	a_flag : 目标地址(值安卓发送至STM32的数据包中的目标地址,即本模块的地址)
 //	c_flag : 操作码
@@ -137,7 +136,22 @@ void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag)
 }
 
 //
+//	往串口发送指令(该函数用于发送数据包包含执行状态的指令，例如开门的执行结果反馈)
+//	前三个参数表同上
+//	stat : 执行状态(success , fail)(这是一个枚举，定义于 drive.h 中)
+//
+void usart_cmd(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,enum exe_status stat)
+{
+	usart_buff_init(buff,a_flag,c_flag);	//初始化发送缓冲区
+	unsigned short crc_result = crc(&buff[2],6);
+	buff[8] = crc_result>>8;
+	buff[9] = (unsigned char)(crc_result&0x00ff);
+	usart_send(USART_M,buff,10);
+}
+
+//
 //	串口数据缓冲区初始化
+//	参数表同上
 //
 void usart_buff_init(unsigned char* buff,unsigned char a_flag,unsigned char c_flag)
 {

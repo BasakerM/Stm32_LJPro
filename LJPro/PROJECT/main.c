@@ -1,5 +1,4 @@
-#include "usart.h"
-#include "drive.h"
+#include "function.h"
 
 //该处的宏用于select函数中的预编译,若为瓶子部分的主控板则注释第二个宏
 #define BOTTLE
@@ -35,7 +34,6 @@ int main()
 //
 void select(unsigned char* a_flag,unsigned char* c_flag)
 {
-	unsigned char ch = 0x01;
 	switch(*a_flag)
 	{
 		case 0x00: break;	//空闲状态
