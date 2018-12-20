@@ -15,7 +15,7 @@ void systick_init(void)
 //
 //unsigned long time_out_count = 0;
 unsigned long time_out = 0;
-void time_out_start(float sec)
+void timeout_start(float sec)
 {
 	if(sec > 0)
 	{
@@ -26,7 +26,7 @@ void time_out_start(float sec)
 
 //
 //	关闭超时
-void time_out_end(void)
+void timeout_end(void)
 {
 	time_out = 0;
 	SysTick->CTRL &=~SysTick_CTRL_ENABLE_Msk;//关闭滴答
@@ -36,7 +36,7 @@ void time_out_end(void)
 //	获取超时的状态
 //	超时后返回 1,未超时则返回0
 //
-unsigned char time_out_getstatus(void)
+unsigned char timeout_status_get(void)
 {
 	if(time_out)	//未超时
 	{

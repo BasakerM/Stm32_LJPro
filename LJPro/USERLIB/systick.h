@@ -4,9 +4,9 @@
 #include "stm32f10x.h"
 
 void systick_init(void);
-void time_out_start(float sec);
-void time_out_end(void);
-unsigned char time_out_getstatus(void);
+void timeout_start(float sec);
+void timeout_end(void);
+unsigned char timeout_status_get(void);
 /*void systick_ms(unsigned long time);
 void systick_us(unsigned long time);
 void timeout_open(void);

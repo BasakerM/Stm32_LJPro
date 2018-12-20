@@ -7,9 +7,9 @@ unsigned char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
 //	瓶子部分用户的门操作
 //
 unsigned char door_bottle_user_flag = 1;	//用于判断是否为首次进入的标志
-void door_bottle_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void bottle_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
-	switch(bottle_k_door(oc,5))
+	switch(door_ctrl_user(door_bottle_user,oc,5))
 	{
 		case exeing: if(door_bottle_user_flag)
 						{
@@ -29,7 +29,7 @@ void door_bottle_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc o
 //
 //	瓶子部分管理员的门操作
 //
-void door_bottle_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void bottle_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -38,7 +38,7 @@ void door_bottle_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc
 //
 //	金属部分用户的门操作
 //
-void door_metal_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void metal_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -47,7 +47,7 @@ void door_metal_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc
 //
 //	金属部分管理员的门操作
 //
-void door_metal_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void metal_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -56,7 +56,7 @@ void door_metal_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc 
 //
 //	金属部分称重
 //
-void weight_metal(unsigned char* a_flag,unsigned char* c_flag)
+void metal_weight(unsigned char* a_flag,unsigned char* c_flag)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -65,7 +65,7 @@ void weight_metal(unsigned char* a_flag,unsigned char* c_flag)
 //
 //	纸类部分用户的门操作
 //
-void door_paper_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void paper_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -74,7 +74,7 @@ void door_paper_user(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc
 //
 //	纸类部分管理员的门操作
 //
-void door_paper_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc oc)
+void paper_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -83,7 +83,7 @@ void door_paper_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_oc 
 //
 //	纸类部分称重
 //
-void weight_paper(unsigned char* a_flag,unsigned char* c_flag)
+void paper_weight(unsigned char* a_flag,unsigned char* c_flag)
 {
 	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
 	*a_flag = 0x00; *c_flag = 0x00;
@@ -104,10 +104,10 @@ void bottle_function(unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(*c_flag)
 	{
-		case 0xB1: door_bottle_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: door_bottle_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: door_bottle_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: door_bottle_manage(a_flag,c_flag,close); break;	//管理员关门操作码
+		case 0xB1: bottle_door_user(a_flag,c_flag,open); break;	//用户开门操作码
+		case 0xB2: bottle_door_user(a_flag,c_flag,close); break;	//用户关门操作码
+		case 0xB3: bottle_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
+		case 0xB4: bottle_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
 	}
 }
 
@@ -119,11 +119,11 @@ void metal_function(unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(*c_flag)
 	{
-		case 0xB1: door_metal_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: door_metal_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: door_metal_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: door_metal_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-		case 0xD1: weight_metal(a_flag,c_flag); break;	//称重
+		case 0xB1: metal_door_user(a_flag,c_flag,open); break;	//用户开门操作码
+		case 0xB2: metal_door_user(a_flag,c_flag,close); break;	//用户关门操作码
+		case 0xB3: metal_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
+		case 0xB4: metal_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
+		case 0xD1: metal_weight(a_flag,c_flag); break;	//称重
 	}
 }
 
@@ -135,11 +135,11 @@ void paper_function(unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(*c_flag)
 	{
-		case 0xB1: door_paper_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: door_paper_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: door_paper_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: door_paper_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-		case 0xD1: weight_paper(a_flag,c_flag); break;	//称重
+		case 0xB1: paper_door_user(a_flag,c_flag,open); break;	//用户开门操作码
+		case 0xB2: paper_door_user(a_flag,c_flag,close); break;	//用户关门操作码
+		case 0xB3: paper_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
+		case 0xB4: paper_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
+		case 0xD1: paper_weight(a_flag,c_flag); break;	//称重
 	}
 }
 
@@ -176,36 +176,38 @@ void paper_function(unsigned char* a_flag,unsigned char* c_flag)
 ////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 
 //
-//	开瓶子用户门
+//	用户门控制
+//	door : 选择门(door_metal_user,,door_paper_user,,door_bottle_user)
 //	oc : 对门的操作,开门 : open,关门 : close
-//	sec ： 操作时间，例如 5s 则最多操作 5s ,超过 5s 则视为操作失败
+//	sec ： 操作时间，例如 5, 则最多操作 5s ,超过 5s 则视为操作失败
 //	return : 操作中 : exeing , 成功 : success , 失败 : fail
 //
-unsigned bottle_k_door_flag = 1;	//用于判断是否为首次进入的标志
-enum exe_status bottle_k_door(enum door_oc oc,unsigned char sec)
+unsigned door_ctrl_user_flag = 1;	//用于判断是否为首次进入的标志
+enum exe_status door_ctrl_user(enum door_device door,enum door_status oc,float sec)
 {
-	if(bottle_k_door_flag)
+	enum motor_device md = door_to_motor(door);
+	if(door_ctrl_user_flag)
 	{
-		bottle_k_door_flag = 0;
-		time_out_start(5);	//开启超时
-		if(oc == open) motor_ctrl(motor_bottle_k,run_z);	//开门--正转
-		else if(oc == close) motor_ctrl(motor_bottle_k,run_f);	//关门--反转
+		door_ctrl_user_flag = 0;
+		timeout_start(sec);	//开启超时
+		if(oc == open) motor_ctrl(md,run_z);	//开门--正转
+		else if(oc == close) motor_ctrl(md,run_f);	//关门--反转
 	}
 	else
 	{
-		if(door_bottle_k_getstatus() == oc)	//获取开门状态
+		if(door_status_get(door) == oc)	//获取门状态
 		{	//已开门
-			bottle_k_door_flag = 1;
-			motor_ctrl(motor_bottle_k,run_s);	//停止转动
-			time_out_end();	//关闭超时
+			door_ctrl_user_flag = 1;
+			motor_ctrl(md,run_s);	//停止转动
+			timeout_end();	//关闭超时
 			return success;
 		}
-		else if(time_out_getstatus())	//获取超时状态
+		else if(timeout_status_get())	//获取超时状态
 		{
 			//已超时
-			bottle_k_door_flag = 1;
-			motor_ctrl(motor_bottle_k,run_s);
-			time_out_end();
+			door_ctrl_user_flag = 1;
+			motor_ctrl(md,run_s);
+			timeout_end();
 			return fail;
 		}
 	}
@@ -213,16 +215,41 @@ enum exe_status bottle_k_door(enum door_oc oc,unsigned char sec)
 }
 
 //
+//	管理员门控制(管理员门在对门操作的时候只有 open,没有 close)
+//	door : 选择门(door_metal_manage,,door_paper_manage,,door_bottle_manage)
+//	oc : 对门的操作,开门 : open,关门 : close
+//	sec ： 操作时间，例如 5, 则最多操作 5s ,超过 5s 则视为操作失败
+//	return : 操作中 : exeing , 成功 : success , 失败 : fail
 //
-//
-unsigned metal_open_door_flag = 1;
-void metal_open_door(unsigned char sec)
+unsigned door_ctrl_manage_flag = 1;	//用于判断是否为首次进入的标志
+enum exe_status door_ctrl_manage(enum door_device door,enum door_status oc,float sec)
 {
-	if(metal_open_door_flag)
+	enum motor_device md = door_to_motor(door);
+	if(door_ctrl_manage_flag)
 	{
-		metal_open_door_flag = 0;
-		motor_ctrl(motor_metal,run_z);
+		door_ctrl_manage_flag = 0;
+		timeout_start(sec);	//开启超时
+		if(oc == open) motor_ctrl(md,run_z);	//开始控制电控锁
 	}
+	else
+	{
+		if(door_status_get(door) == oc)	//获取门状态
+		{	//已开门
+			door_ctrl_manage_flag = 1;
+			motor_ctrl(md,run_s);	//停止控制电控锁
+			timeout_end();	//关闭超时
+			return success;
+		}
+		else if(timeout_status_get())	//获取超时状态
+		{
+			//已超时
+			door_ctrl_manage_flag = 1;
+			motor_ctrl(md,run_s);
+			timeout_end();
+			return fail;
+		}
+	}
+	return exeing;
 }
 
 //
