@@ -4,11 +4,14 @@
 #include "stm32f10x.h"
 
 void systick_init(void);
-void systick_ms(unsigned long time);
+void time_out_start(float sec);
+void time_out_end(void);
+unsigned char time_out_getstatus(void);
+/*void systick_ms(unsigned long time);
 void systick_us(unsigned long time);
 void timeout_open(void);
 void timeout_close(void);
 unsigned long timeout_get(void);
-void timeout_clear(void);
+void timeout_clear(void);*/
 
 #endif

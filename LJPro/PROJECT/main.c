@@ -15,8 +15,8 @@ unsigned char code_flag = 0x00;	//操作码标志
 
 int main()
 {
-	usart_init();
-
+	function_init();
+	
 	while(1)
 	{
 		//以下串口方式未使用循环,最深为三层嵌套判断,只占用极少的 cpu 时间

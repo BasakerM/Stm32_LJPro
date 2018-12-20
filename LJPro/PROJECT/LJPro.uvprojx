@@ -385,6 +385,16 @@
               <FilePath>.\main.c</FilePath>
             </File>
             <File>
+              <FileName>function.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USERLIB\function.c</FilePath>
+            </File>
+            <File>
+              <FileName>driver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USERLIB\driver.c</FilePath>
+            </File>
+            <File>
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\USERLIB\usart.c</FilePath>
@@ -393,16 +403,6 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\USERLIB\systick.c</FilePath>
-            </File>
-            <File>
-              <FileName>drive.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USERLIB\drive.c</FilePath>
-            </File>
-            <File>
-              <FileName>motor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USERLIB\motor.c</FilePath>
             </File>
           </Files>
         </Group>
