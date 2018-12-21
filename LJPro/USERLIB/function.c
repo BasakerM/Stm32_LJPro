@@ -7,6 +7,7 @@ unsigned char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
 //	瓶子部分用户的门操作
 //
 unsigned char door_bottle_user_flag = 1;	//用于判断是否为首次进入的标志
+unsigned char scanf_code_flag = 0;
 void bottle_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
 {
 	switch(door_ctrl_user(door_bottle_user,oc,5))
@@ -16,13 +17,21 @@ void bottle_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_stat
 							usart_ack(usart_Buff_Send,*a_flag,*c_flag);
 							door_bottle_user_flag = 0;
 						} break;
-		case success: *c_flag = 0xaa; usart_ack(usart_Buff_Send,*a_flag,*c_flag); door_bottle_user_flag = 1; 
-							*a_flag = 0x00; *c_flag = 0x00;
+		case success: *c_flag = 0xaa; usart_ack(usart_Buff_Send,*a_flag,*c_flag); door_bottle_user_flag = 1;  scanf_code_flag = 1;
+							//*a_flag = 0x00; *c_flag = 0x00; 
 						break;
 		case fail: *c_flag = 0xab; usart_ack(usart_Buff_Send,*a_flag,*c_flag); door_bottle_user_flag = 1; 
 							*a_flag = 0x00; *c_flag = 0x00;
 						break;
 	}
+	if(scanf_code_flag == 1)
+		if(door_status_get(scanf_code_start) == open)
+			scanf_code_flag = 2；
+switch(door_ctrl_user(scanf_code_end,open,5))
+			{
+				case success: break;
+				case fail: *a_flag = 0x00; *c_flag = 0x00; break;
+			}
 	//*a_flag = 0x00; *c_flag = 0x00;
 }
 
@@ -100,15 +109,18 @@ void paper_weight(unsigned char* a_flag,unsigned char* c_flag)
 //
 //	瓶子部分的功能
 //
+unsigned char c_flag_old = 0x00;
 void bottle_function(unsigned char* a_flag,unsigned char* c_flag)
 {
-	switch(*c_flag)
+	if(c_flag_old)
+	event_select(*c_flag);
+	/*switch(*c_flag)
 	{
 		case 0xB1: bottle_door_user(a_flag,c_flag,open); break;	//用户开门操作码
 		case 0xB2: bottle_door_user(a_flag,c_flag,close); break;	//用户关门操作码
 		case 0xB3: bottle_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
 		case 0xB4: bottle_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-	}
+	}*/
 }
 
 //
@@ -174,6 +186,19 @@ void paper_function(unsigned char* a_flag,unsigned char* c_flag)
 ////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+
+//
+//	事件函数
+//
+void event(enum enum_event e)
+{
+	switch(e)
+	{
+		case bottle_open_door: break;
+	}
+}
+
+
 
 //
 //	用户门控制

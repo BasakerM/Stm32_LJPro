@@ -36,12 +36,7 @@ void motor_ctrl(enum motor_device device,enum motor_status mrun)
 	}
 	else if(device == motor_bottle_p)	//瓶子皮带电机
 	{
-		switch(mrun)
-		{
-			case run_z:  break;	//正转
-			case run_f:  break;	//反转
-			case run_s:  break;	//停止
-		}
+		motor_pd_z(mrun);
 	}
 }
 
@@ -73,7 +68,7 @@ enum door_status door_status_get(enum door_device door)
 				return close;
 			else
 				return open;
-			break;
+			//break;
 
 		//纸类用户门////////////////////////////////
 		case door_paper_user: break;
@@ -83,7 +78,7 @@ enum door_status door_status_get(enum door_device door)
 				return close;
 			else
 				return open;
-			break;
+			//break;
 
 		//瓶子用户门////////////////////////////////
 		case door_bottle_user: 
@@ -93,15 +88,28 @@ enum door_status door_status_get(enum door_device door)
 				return close;
 			else
 				return ing;
-			break;
+			//break;
 		//瓶子管理员门
 		case door_bottle_manage: 
 			if(exti_line11 == on)
 				return close;
 			else
 				return open;
-			break;
+			//break;
+		//用于启动扫码(瓶子光电1)
+		case scanf_code_start: 
+			if(exti_line2 == on)
+				return open;
+			else
+				return close;
+		//用于停止扫码(瓶子光电2)
+		case scanf_code_start: 
+			if(exti_line3 == on)
+				return close;
+			else
+				return open;
 	}
+	return ing;
 }
 
 //
@@ -118,6 +126,42 @@ enum motor_device door_to_motor(enum door_device door)
 		case door_paper_manage: return lock_paper;
 		case door_bottle_user: return motor_bottle_k;
 		case door_bottle_manage: return lock_bottle;
+		case scanf_code_start: return motor_bottle_p;
+	}
+	return motor_metal;
+}
+
+unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
+unsigned char motor_pd_f_setp[4] = {0x08,0x04,0x02,0x01};
+unsigned char motor_pd_setp = 0;
+unsigned long motor_pd_count = 0;
+unsigned long motor_pd_count0 = 0;
+//
+//	皮带电机正转
+//
+void motor_pd_z(enum motor_status mrun)
+{	
+	if(motor_pd_count != 2000)
+		motor_pd_count++;
+	else
+	{
+		if(motor_pd_count0 != 10)
+		{
+			motor_pd_count0++;
+			GPIO_Write(MOTOR_PD_GPIO,0x00);
+		}
+		else
+		{
+			motor_pd_count0 = 0;
+			motor_pd_count = 0;
+			switch(mrun)
+			{
+				case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
+				case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
+				case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
+			}
+			motor_pd_setp == 4? (motor_pd_setp = 0):(motor_pd_setp = motor_pd_setp);
+		}
 	}
 }
 

@@ -36,13 +36,12 @@ void select(unsigned char* a_flag,unsigned char* c_flag)
 {
 	switch(*a_flag)
 	{
-		case 0x00: break;	//空闲状态
 	#ifdef BOTTLE
-		case 0xA2: bottle_function(a_flag,c_flag); break;	//瓶子
+		case 0xA2: bottle_function(c_flag); break;	//瓶子
 	#endif
 	#ifdef METAL_PAPER	
-		case 0xA3: metal_function(a_flag,c_flag); break;	//金属
-		case 0xA4: paper_function(a_flag,c_flag); break;	//纸类
+		case 0xA3: metal_function(c_flag); break;	//金属
+		case 0xA4: paper_function(c_flag); break;	//纸类
 	#endif
 	}
 	/**/

@@ -3,9 +3,9 @@
 
 #include <stm32f10x.h>
 #include "driver.h"
-
+/*
 enum exe_status{exeing = 0,success = 1,fail = 2};
-
+*/
 //具体操作
 void bottle_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc);
 void bottle_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc);
