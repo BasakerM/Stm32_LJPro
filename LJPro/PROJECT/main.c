@@ -7,7 +7,7 @@
 unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
 unsigned char optin_code_get(unsigned char code);
 void usart_parsedat(unsigned char usart_dat,unsigned char* addr_flag,unsigned char* code_flag);
-void select(unsigned char* a_flag,unsigned char* c_flag);
+void select(unsigned char a_flag,unsigned char c_flag);
 
 unsigned char usart_dat_rec = 0x00;
 unsigned char addr_flag = 0x00;	//地址标志
@@ -23,7 +23,7 @@ int main()
 		if(usart_getdat(USART_M,&usart_dat_rec))	//检测并接收串口数据
 			usart_parsedat(usart_dat_rec,&addr_flag,&code_flag);	//解析串口数据,若接收到规定的数据包则提取目标地址及操作码
 		//进入选择
-		select(&addr_flag,&code_flag);
+		select(addr_flag,code_flag);
 	}
 }
 
@@ -32,9 +32,9 @@ int main()
 //	a_flag : 目标地址
 //	c_flag : 操作码
 //
-void select(unsigned char* a_flag,unsigned char* c_flag)
+void select(unsigned char a_flag,unsigned char c_flag)
 {
-	switch(*a_flag)
+	switch(a_flag)
 	{
 	#ifdef BOTTLE
 		case 0xA2: bottle_function(c_flag); break;	//瓶子

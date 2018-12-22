@@ -7,7 +7,7 @@
 //
 void motor_ctrl(enum motor_device device,enum motor_status mrun)
 {
-	if(device == motor_metal)	//金属推杆电机
+	if(device == metal_motor)	//金属推杆电机
 	{
 		switch(mrun)
 		{
@@ -16,7 +16,7 @@ void motor_ctrl(enum motor_device device,enum motor_status mrun)
 			case run_s: MOTOR_METAL_OUT1(LOW); MOTOR_METAL_OUT2(LOW); break;	//停止
 		}
 	}
-	else if(device == motor_paper)	//纸类推杆电机
+	else if(device == paper_motor)	//纸类推杆电机
 	{
 		switch(mrun)
 		{
@@ -25,7 +25,7 @@ void motor_ctrl(enum motor_device device,enum motor_status mrun)
 			case run_s: MOTOR_PAPER_OUT1(LOW); MOTOR_PAPER_OUT2(LOW); break;	//停止
 		}
 	}
-	else if(device == motor_bottle_k)	//瓶子开门电机
+	else if(device == bottle_motor_door)	//瓶子门电机
 	{
 		switch(mrun)
 		{
@@ -34,9 +34,9 @@ void motor_ctrl(enum motor_device device,enum motor_status mrun)
 			case run_s: MOTOR_BOTTLE_K_OUT1(LOW); MOTOR_BOTTLE_K_OUT2(LOW); break;	//停止
 		}
 	}
-	else if(device == motor_bottle_p)	//瓶子皮带电机
+	else if(device == bottle_motor_recycle)	//瓶子皮带电机
 	{
-		motor_pd_z(mrun);
+		motor_pd_ctrl(mrun);
 	}
 }
 
@@ -57,78 +57,42 @@ enum device_power exti_line13 = off;	//纸类限位器--管理员门
 //
 //	获取门的状态
 //
-enum door_status door_status_get(enum door_device door)
+enum enum_status device_status_get(enum enum_device d_flag)
 {
-	switch(door)
-	{	//金属用户门////////////////////////////////
-		case door_metal_user: break;
-		//金属管理员门
-		case door_metal_manage: 
-			if(exti_line12 == on)	//管理员门在限位器闭合(on)时为 close
-				return close;
-			else
-				return open;
-			//break;
-
-		//纸类用户门////////////////////////////////
-		case door_paper_user: break;
-		//纸类管理员门
-		case door_paper_manage: 
-			if(exti_line13 == on)
-				return close;
-			else
-				return open;
-			//break;
-
-		//瓶子用户门////////////////////////////////
-		case door_bottle_user: 
+	switch(d_flag)
+	{
+		//瓶子开门////////////////////////////////
+		case bottle_sensor_opendoor:
 			if(exti_line5 == on || exti_line6 == on)
 				return open;
-			else if (exti_line7 == on)
+			else
+				return ing;
+		//瓶子关门////////////////////////////////
+		case bottle_sensor_closedoor:
+			if(exti_line7 == on)
 				return close;
 			else
 				return ing;
-			//break;
-		//瓶子管理员门
-		case door_bottle_manage: 
-			if(exti_line11 == on)
-				return close;
-			else
-				return open;
-			//break;
-		//用于启动扫码(瓶子光电1)
-		case scanf_code_start: 
+		//瓶子光电1////////////////////////////////
+		case bottle_sensor_one:
 			if(exti_line2 == on)
-				return open;
+				return on;
 			else
-				return close;
-		//用于停止扫码(瓶子光电2)
-		case scanf_code_start: 
+				return off;
+		//瓶子光电2////////////////////////////////
+		case bottle_sensor_two:
 			if(exti_line3 == on)
-				return close;
+				return on;
 			else
-				return open;
+				return off;
+		//瓶子光电3////////////////////////////////
+		case bottle_sensor_three:
+			if(exti_line4 == on)
+				return on;
+			else
+				return off;
 	}
 	return ing;
-}
-
-//
-//	映射门设备类型到电机设备类型的关系
-//	给门的类型,返回对应的控制设备
-//
-enum motor_device door_to_motor(enum door_device door)
-{
-	switch(door)
-	{
-		case door_metal_user: return motor_metal;
-		case door_metal_manage: return lock_metal;
-		case door_paper_user: return motor_paper;
-		case door_paper_manage: return lock_paper;
-		case door_bottle_user: return motor_bottle_k;
-		case door_bottle_manage: return lock_bottle;
-		case scanf_code_start: return motor_bottle_p;
-	}
-	return motor_metal;
 }
 
 unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
@@ -139,7 +103,7 @@ unsigned long motor_pd_count0 = 0;
 //
 //	皮带电机正转
 //
-void motor_pd_z(enum motor_status mrun)
+void motor_pd_ctrl(enum enum_status mrun)
 {	
 	if(motor_pd_count != 2000)
 		motor_pd_count++;

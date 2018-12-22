@@ -4,25 +4,19 @@
 #include <stm32f10x.h>
 #include "systick.h"
 #include "usart.h"
-/*
-enum device_power{on = 0,off = 1};	//设备电源(通电、断电)
-enum motor_device	//电机设备类型(金属电机、纸类电机、瓶子开门电机、瓶子皮带电机、金属电控锁、纸类电控锁、瓶子电控锁)
-{motor_metal = 0,motor_paper = 1,motor_bottle_k = 2,motor_bottle_p = 3,lock_metal = 4,lock_paper = 5,lock_bottle = 6};
-enum motor_status{run_z = 0,run_f = 1,run_s = 2};	//电机的状态(正转、反转、停止)
-enum door_device	//门设备类型(金属用户门、金属管理员门，纸类用户门，纸类管理员门、瓶子用户门，瓶子管理员门)
-{door_metal_user = 0,door_metal_manage = 1,door_paper_user = 2,door_paper_manage = 3,door_bottle_user = 4,door_bottle_manage = 5,scanf_code_start = 6,scanf_code_end};
-enum door_status{open = 0,close = 1,ing = 2};	//门的状态(开、关、介于开关之间)
-*/
+
+//////////////////////////////枚举/////////////////////////////////
 enum enum_event
 {
-	no_event = 0,bottle_open_door = 1,bottle_close_door = 2,bottle_recycle_check_start = 3
-}
+	event_none = 0,event_bottle_opendoor = 1,event_bottle_closedoor = 2,
+	event_bottle_put = 3,event_bottle_scanfcode = 4,event_bottle_ack = 5,event_bottle_recycle = 6,event_bottle_fail = 7
+};
 
 enum enum_device
 {
-	bottle_motor_opendoor = 0,bottle_motor_recycle = 1,bottle_lock = 2,
+	bottle_motor_door = 0,bottle_motor_recycle = 1,bottle_lock = 2,
 	bottle_sensor_opendoor = 3,bottle_sensor_closedoor = 4,
-	bottle_sensor_recycleone = 5,bottle_sensor_recycletwo = 6,bottle_sensor_recyclethree = 7,
+	bottle_sensor_one = 5,bottle_sensor_two = 6,bottle_sensor_three = 7,
 	metal_motor = 8,metal_lock = 9,metal_sensor = 10,
 	paper_motor = 11,paper_lock = 12,paper_sensor = 13
 };
@@ -34,6 +28,15 @@ enum enum_status
 	run_z = 5,run_f = 6,run_s = 7,
 	on = 8,off = 9
 };
+
+//////////////////////////////声明/////////////////////////////////
+void motor_ctrl(enum enum_device device,enum enum_status mrun);
+enum enum_status device_status_get(enum enum_device device);
+void motor_pd_ctrl(enum enum_status mrun);
+void driver_init(void);
+void motor_init(void);
+void led_init(void);
+void exti_init(void);
 
 //////////////////////////////定义/////////////////////////////////
 //中断
@@ -78,14 +81,5 @@ enum enum_status
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
 
-//////////////////////////////声明/////////////////////////////////
-void motor_ctrl(enum motor_device device,enum motor_status mrun);
-enum door_status door_status_get(enum door_device door);
-enum motor_device door_to_motor(enum door_device door);
-void motor_pd_z(enum motor_status mrun);
-void driver_init(void);
-void motor_init(void);
-void led_init(void);
-void exti_init(void);
 
 #endif

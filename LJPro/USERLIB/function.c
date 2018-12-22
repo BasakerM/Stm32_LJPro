@@ -2,315 +2,341 @@
 
 
 unsigned char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
+unsigned char bottle_addr = 0xA2;
+unsigned char metal_addr = 0xA3;
+unsigned char paper_addr = 0xA4;
+
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
 
 //
-//	瓶子部分用户的门操作
+//	瓶子开门事件对应功能流程
+//	e_flag : 当前事件
+//	c_flag : 当前代码
 //
-unsigned char door_bottle_user_flag = 1;	//用于判断是否为首次进入的标志
-unsigned char scanf_code_flag = 0;
-void bottle_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_open_door_flag = 0;
+void bottle_opendoor(enum enum_event* e_flag,unsigned char c_flag)
 {
-	switch(door_ctrl_user(door_bottle_user,oc,5))
+	if(bottle_open_door_flag)	//非首次进入
 	{
-		case exeing: if(door_bottle_user_flag)
-						{
-							usart_ack(usart_Buff_Send,*a_flag,*c_flag);
-							door_bottle_user_flag = 0;
-						} break;
-		case success: *c_flag = 0xaa; usart_ack(usart_Buff_Send,*a_flag,*c_flag); door_bottle_user_flag = 1;  scanf_code_flag = 1;
-							//*a_flag = 0x00; *c_flag = 0x00; 
-						break;
-		case fail: *c_flag = 0xab; usart_ack(usart_Buff_Send,*a_flag,*c_flag); door_bottle_user_flag = 1; 
-							*a_flag = 0x00; *c_flag = 0x00;
-						break;
+		if(device_status_get(bottle_sensor_opendoor) == open)	//检查限位器状态
+		{	//已开门
+			bottle_open_door_flag = 0;
+			motor_ctrl(bottle_motor_door,run_s);	//停止转动
+			timeout_end();	//关闭超时
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			//已超时
+			bottle_open_door_flag = 0;
+			motor_ctrl(bottle_motor_door,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送失败消息
+		}
 	}
-	if(scanf_code_flag == 1)
-		if(door_status_get(scanf_code_start) == open)
-			scanf_code_flag = 2；
-switch(door_ctrl_user(scanf_code_end,open,5))
-			{
-				case success: break;
-				case fail: *a_flag = 0x00; *c_flag = 0x00; break;
-			}
-	//*a_flag = 0x00; *c_flag = 0x00;
+	else	//首次进入
+	{
+		bottle_open_door_flag = 1;
+		usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送响应
+		timeout_start(3);	//开启超时
+		motor_ctrl(bottle_motor_door,run_z);	//开门--正转
+	}
 }
 
 //
-//	瓶子部分管理员的门操作
+//	瓶子放入事件对应功能流程
 //
-void bottle_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_put_flag = 0;
+void bottle_put(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	if(bottle_put_flag)
+	{
+		if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
+		{
+			bottle_put_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送刷新消息
+			*e_flag = event_bottle_scanfcode;	//切换事件到扫码
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			bottle_put_flag = 0;
+			timeout_end();
+			*e_flag = event_bottle_closedoor;	//切换事件到关门
+		}
+	}
+	else
+	{
+		bottle_put_flag = 1;
+		timeout_start(120);	//开启超时
+	}
 }
 
 //
-//	金属部分用户的门操作
+//	瓶子扫码事件对应功能流程
 //
-void metal_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_scanfcode_flag = 0;
+void bottle_scanfcode(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	if(bottle_scanfcode_flag)	
+	{
+		if(device_status_get(bottle_sensor_two) == on)	//检查光电2状态
+		{
+			bottle_scanfcode_flag = 0;
+			motor_ctrl(bottle_motor_recycle,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送获取扫码结果消息
+			*e_flag = event_bottle_ack;	//切换事件到扫码
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			bottle_scanfcode_flag = 0;
+			motor_ctrl(bottle_motor_recycle,run_s);	//停止转动
+			timeout_end();
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+	}
+	else
+	{
+		bottle_scanfcode_flag = 1;
+		timeout_start(5);	//开启超时
+		motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
+	}
 }
 
 //
-//	金属部分管理员的门操作
+//	瓶子确认事件对应功能流程
 //
-void metal_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_ack_flag = 0;
+void bottle_ack(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	if(bottle_ack_flag)	
+	{
+		if(c_flag == 0xac)	//成功
+		{
+			bottle_ack_flag = 0;
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送响应
+			timeout_end();
+			*e_flag = event_bottle_recycle;	//切换事件到回收
+		}
+		else if(c_flag == 0xad)	//失败
+		{
+			bottle_ack_flag = 0;
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送响应
+			timeout_end();
+			*e_flag = event_bottle_fail;	//切换事件到失败
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			bottle_ack_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送自己判断为失败的消息
+			*e_flag = event_bottle_fail;	//切换事件到失败
+		}
+	}
+	else
+	{
+		bottle_ack_flag = 1;
+		timeout_start(2);	//开启超时
+	}
 }
 
 //
-//	金属部分称重
+//	瓶子回收事件对应功能流程
 //
-void metal_weight(unsigned char* a_flag,unsigned char* c_flag)
+unsigned char bottle_recycle_flag = 0;
+void bottle_recycle(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	bottle_recycle_flag = 1;
+	timeout_start(2);	//开启超时
+	motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
+	while(bottle_recycle_flag)	
+	{
+		if(device_status_get(bottle_sensor_three) == on)	//检查光电3状态
+		{
+			bottle_recycle_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送回收成功的消息
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			bottle_recycle_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送回收失败的消息
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+	}
 }
 
 //
-//	纸类部分用户的门操作
+//	瓶子失败事件对应功能流程
 //
-void paper_door_user(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_fail_flag = 0;
+void bottle_fail(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	if(bottle_fail_flag)
+	{
+		if(device_status_get(bottle_sensor_two) == off)	//检查光电2状态
+		{
+			bottle_fail_flag = 0;
+			timeout_end();
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+		else if(device_status_get(bottle_sensor_two) == on)	//检查光电2状态
+		{
+			bottle_fail_flag = 0;
+			timeout_end();
+		}
+	}
+	else
+	{
+		bottle_fail_flag = 1;
+		timeout_start(2);	//开启超时
+	}
 }
 
 //
-//	纸类部分管理员的门操作
+//	瓶子关门事件对应功能流程
 //
-void paper_door_manage(unsigned char* a_flag,unsigned char* c_flag,enum door_status oc)
+unsigned char bottle_closedoor_flag = 0;
+void bottle_closedoor(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	if(bottle_closedoor_flag)	//非首次进入
+	{
+		if(device_status_get(bottle_sensor_closedoor) == close)	//检查限位器状态
+		{
+			bottle_closedoor_flag = 0;
+			motor_ctrl(bottle_motor_door,run_s);	//停止转动
+			timeout_end();	//关闭超时
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送成功消息
+			*e_flag = event_none;	//切换事件到none
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			bottle_closedoor_flag = 0;
+			motor_ctrl(bottle_motor_door,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送失败消息
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		bottle_closedoor_flag = 1;
+		usart_ack(usart_Buff_Send,bottle_addr,c_flag,0x00,0x00);	//发送响应
+		timeout_start(3);	//开启超时
+		motor_ctrl(bottle_motor_door,run_f);	//关门--反转
+	}
 }
 
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+
 //
-//	纸类部分称重
+//	事件执行函数
+//	c_falg : 当前代码
+//	e_flag : 当前事件
 //
-void paper_weight(unsigned char* a_flag,unsigned char* c_flag)
+void event_exe(enum enum_event* e_flag,unsigned char c_flag)
 {
-	usart_ack(usart_Buff_Send,*a_flag,*c_flag);	//发送应答
-	*a_flag = 0x00; *c_flag = 0x00;
+	switch(*e_flag)
+	{
+		case event_bottle_opendoor: bottle_opendoor(e_flag,c_flag); break;
+		case event_bottle_put: bottle_put(e_flag,c_flag); break;
+		case event_bottle_scanfcode: bottle_scanfcode(e_flag,c_flag); break;
+		case event_bottle_ack: bottle_ack(e_flag,c_flag); break;
+		case event_bottle_recycle: bottle_recycle(e_flag,c_flag); break;
+		case event_bottle_fail: bottle_fail(e_flag,c_flag); break;
+		case event_bottle_closedoor: bottle_closedoor(e_flag,c_flag); break;
+	}
 }
 
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下定义了各个部分的功能/////////////////////////////////////////////////////////////////////////////////////
+//
+//	事件选择函数		////////考虑事件切换时是否初始化设备状态,避免在一个事件未结束前 代码强行切换事件,导致上一个事件中启动的设备依旧运行 造成异常////////////////
+//	c_falg : 通信数据中的代码
+//	e_flag : 当前事件
+//	return : 如果代码不变则返回当前事件,如果代码变更则返回代码对应的事件
+//
+unsigned char c_flag_old = 0x00;	//用于记录上次触发事件的c_flag,避免同一个c_flag重复触发事件
+enum enum_event event_select(enum enum_event e_flag,unsigned char c_flag)
+{
+	if(c_flag == c_flag_old)	//c_flag 没有变更
+		return e_flag;	//则返回当前事件
+	else
+	{
+		c_flag_old = c_flag;
+		switch(c_flag)
+		{
+			case 0xa0: return event_bottle_opendoor;
+		}
+		return no_event;	//代码变更且无对应事件,则认为无事件触发
+	}
+}
+
+enum enum_event run_event = no_event;	//程序当前运行的事件,所有部分共用该事件变量,如此则可以在事件选择部分做地址意外切换导致的事件强行变更问题
 
 //
 //	瓶子部分的功能
 //
-unsigned char c_flag_old = 0x00;
-void bottle_function(unsigned char* a_flag,unsigned char* c_flag)
+void bottle_function(unsigned char c_flag)
 {
-	if(c_flag_old)
-	event_select(*c_flag);
-	/*switch(*c_flag)
-	{
-		case 0xB1: bottle_door_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: bottle_door_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: bottle_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: bottle_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-	}*/
+	run_event = event_select(c_flag,run_event);
+	event_exe(&run_event,c_flag);
 }
 
 //
 //	金属部分的功能
 //
 
-void metal_function(unsigned char* a_flag,unsigned char* c_flag)
+void metal_function(unsigned char c_flag)
 {
-	switch(*c_flag)
-	{
-		case 0xB1: metal_door_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: metal_door_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: metal_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: metal_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-		case 0xD1: metal_weight(a_flag,c_flag); break;	//称重
-	}
+	run_event = event_select(c_flag);
+	event_exe(&run_event);
 }
 
 //
 //	纸类部分的功能
 //
 
-void paper_function(unsigned char* a_flag,unsigned char* c_flag)
+void paper_function(unsigned char c_flag)
 {
-	switch(*c_flag)
-	{
-		case 0xB1: paper_door_user(a_flag,c_flag,open); break;	//用户开门操作码
-		case 0xB2: paper_door_user(a_flag,c_flag,close); break;	//用户关门操作码
-		case 0xB3: paper_door_manage(a_flag,c_flag,open); break;	//管理员开门操作码
-		case 0xB4: paper_door_manage(a_flag,c_flag,close); break;	//管理员关门操作码
-		case 0xD1: paper_weight(a_flag,c_flag); break;	//称重
-	}
+	run_event = event_select(c_flag);
+	event_exe(&run_event);
 }
 
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为具体功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 
 //
-//	事件函数
+//	初始化函数
 //
-void event(enum enum_event e)
+void function_init(void)
 {
-	switch(e)
-	{
-		case bottle_open_door: break;
-	}
-}
-
-
-
-//
-//	用户门控制
-//	door : 选择门(door_metal_user,,door_paper_user,,door_bottle_user)
-//	oc : 对门的操作,开门 : open,关门 : close
-//	sec ： 操作时间，例如 5, 则最多操作 5s ,超过 5s 则视为操作失败
-//	return : 操作中 : exeing , 成功 : success , 失败 : fail
-//
-unsigned door_ctrl_user_flag = 1;	//用于判断是否为首次进入的标志
-enum exe_status door_ctrl_user(enum door_device door,enum door_status oc,float sec)
-{
-	enum motor_device md = door_to_motor(door);
-	if(door_ctrl_user_flag)
-	{
-		door_ctrl_user_flag = 0;
-		timeout_start(sec);	//开启超时
-		if(oc == open) motor_ctrl(md,run_z);	//开门--正转
-		else if(oc == close) motor_ctrl(md,run_f);	//关门--反转
-	}
-	else
-	{
-		if(door_status_get(door) == oc)	//获取门状态
-		{	//已开门
-			door_ctrl_user_flag = 1;
-			motor_ctrl(md,run_s);	//停止转动
-			timeout_end();	//关闭超时
-			return success;
-		}
-		else if(timeout_status_get())	//获取超时状态
-		{
-			//已超时
-			door_ctrl_user_flag = 1;
-			motor_ctrl(md,run_s);
-			timeout_end();
-			return fail;
-		}
-	}
-	return exeing;
+	usart_init();
+	driver_init();
 }
 
 //
-//	管理员门控制(管理员门在对门操作的时候只有 open,没有 close)
-//	door : 选择门(door_metal_manage,,door_paper_manage,,door_bottle_manage)
-//	oc : 对门的操作,开门 : open,关门 : close
-//	sec ： 操作时间，例如 5, 则最多操作 5s ,超过 5s 则视为操作失败
-//	return : 操作中 : exeing , 成功 : success , 失败 : fail
-//
-unsigned door_ctrl_manage_flag = 1;	//用于判断是否为首次进入的标志
-enum exe_status door_ctrl_manage(enum door_device door,enum door_status oc,float sec)
-{
-	enum motor_device md = door_to_motor(door);
-	if(door_ctrl_manage_flag)
-	{
-		door_ctrl_manage_flag = 0;
-		timeout_start(sec);	//开启超时
-		if(oc == open) motor_ctrl(md,run_z);	//开始控制电控锁
-	}
-	else
-	{
-		if(door_status_get(door) == oc)	//获取门状态
-		{	//已开门
-			door_ctrl_manage_flag = 1;
-			motor_ctrl(md,run_s);	//停止控制电控锁
-			timeout_end();	//关闭超时
-			return success;
-		}
-		else if(timeout_status_get())	//获取超时状态
-		{
-			//已超时
-			door_ctrl_manage_flag = 1;
-			motor_ctrl(md,run_s);
-			timeout_end();
-			return fail;
-		}
-	}
-	return exeing;
-}
-
-//
-//	往串口发送应答(该函数也用于发送数据包内容皆位0的指令,例如光电信号的反馈)
+//	往串口发送消息
 //	buff : 发送缓冲区
 //	a_flag : 目标地址(值安卓发送至STM32的数据包中的目标地址,即本模块的地址)
 //	c_flag : 操作码
 //
-void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag)
-{
-	usart_buff_init(buff,a_flag,c_flag);	//初始化发送缓冲区
-	unsigned short crc_result = crc(&buff[2],6);
-	buff[8] = crc_result>>8;
-	buff[9] = (unsigned char)(crc_result&0x00ff);
-	usart_send(USART_M,buff,10);
-}
-
-//
-//	往串口发送指令(该函数用于发送数据包包含执行状态的指令，例如开门的执行结果反馈)
-//	前三个参数表同上
-//	stat : 执行状态(success , fail)(这是一个枚举，定义于 drive.h 中)
-//
-void usart_cmd(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,enum exe_status stat)
-{
-	usart_buff_init(buff,a_flag,c_flag);	//初始化发送缓冲区
-	unsigned short crc_result = crc(&buff[2],6);
-	buff[8] = crc_result>>8;
-	buff[9] = (unsigned char)(crc_result&0x00ff);
-	usart_send(USART_M,buff,10);
-}
-
-//
-//	串口数据缓冲区初始化
-//	参数表同上
-//
-void usart_buff_init(unsigned char* buff,unsigned char a_flag,unsigned char c_flag)
+void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,unsigned char dat1,unsigned char dat2)
 {
 	buff[0] = 0x19;
 	buff[1] = 0x19;
@@ -318,16 +344,14 @@ void usart_buff_init(unsigned char* buff,unsigned char a_flag,unsigned char c_fl
 	buff[3] = a_flag;
 	buff[4] = 0xA1;
 	buff[5] = c_flag;
-	buff[6] = 0x00;
-	buff[7] = 0x00;
+	buff[6] = dat1;
+	buff[7] = dat2;
 	buff[8] = 0x00;
 	buff[9] = 0x00;
-}
-
-void function_init(void)
-{
-	usart_init();
-	driver_init();
+	unsigned short crc_result = crc(&buff[2],6);
+	buff[8] = crc_result>>8;
+	buff[9] = (unsigned char)(crc_result&0x00ff);
+	usart_send(USART_M,buff,10);
 }
 
 //
