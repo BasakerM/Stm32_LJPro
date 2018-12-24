@@ -5,7 +5,7 @@
 //	device : 电机设备类型(在deiver.h中定义有枚举)
 //	mrun : 电机运行模式类型(在deiver.h中定义有枚举)
 //
-void motor_ctrl(enum motor_device device,enum motor_status mrun)
+void motor_ctrl(enum enum_device device,enum enum_status mrun)
 {
 	if(device == metal_motor)	//金属推杆电机
 	{
@@ -40,20 +40,20 @@ void motor_ctrl(enum motor_device device,enum motor_status mrun)
 	}
 }
 
-enum device_power exti_line0 = off;	//金属光电
-enum device_power exti_line1 = off;	//纸类光电
-enum device_power exti_line2 = off;	//瓶子光电1
-enum device_power exti_line3 = off;	//瓶子光电2
-enum device_power exti_line4 = off;	//瓶子光电3
+enum enum_status exti_line0 = off;	//金属光电
+enum enum_status exti_line1 = off;	//纸类光电
+enum enum_status exti_line2 = off;	//瓶子光电1
+enum enum_status exti_line3 = off;	//瓶子光电2
+enum enum_status exti_line4 = off;	//瓶子光电3
 
-enum device_power exti_line5 = off;	//瓶子限位器1
-enum device_power exti_line6 = off;	//瓶子限位器2
-enum device_power exti_line7 = off;	//瓶子限位器3
+enum enum_status exti_line5 = off;	//瓶子限位器1
+enum enum_status exti_line6 = off;	//瓶子限位器2
+enum enum_status exti_line7 = off;	//瓶子限位器3
 
-enum device_power exti_line10 = off;	//瓶子限位器4
-enum device_power exti_line11 = off;	//瓶子限位器5--管理员门
-enum device_power exti_line12 = off;	//金属限位器--管理员门
-enum device_power exti_line13 = off;	//纸类限位器--管理员门
+enum enum_status exti_line10 = off;	//瓶子限位器4
+enum enum_status exti_line11 = off;	//瓶子限位器5--管理员门
+enum enum_status exti_line12 = off;	//金属限位器--管理员门
+enum enum_status exti_line13 = off;	//纸类限位器--管理员门
 //
 //	获取门的状态
 //
@@ -66,13 +66,13 @@ enum enum_status device_status_get(enum enum_device d_flag)
 			if(exti_line5 == on || exti_line6 == on)
 				return open;
 			else
-				return ing;
+				return exeing;
 		//瓶子关门////////////////////////////////
 		case bottle_sensor_closedoor:
 			if(exti_line7 == on)
 				return close;
 			else
-				return ing;
+				return exeing;
 		//瓶子光电1////////////////////////////////
 		case bottle_sensor_one:
 			if(exti_line2 == on)
@@ -92,40 +92,39 @@ enum enum_status device_status_get(enum enum_device d_flag)
 			else
 				return off;
 	}
-	return ing;
+	return exeing;
+}
+
+void delay(int ms)
+{
+	for(int i = 0;i < ms;i++)
+		for(int k = 0;k < 2000;k++);
 }
 
 unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
 unsigned char motor_pd_f_setp[4] = {0x08,0x04,0x02,0x01};
 unsigned char motor_pd_setp = 0;
 unsigned long motor_pd_count = 0;
-unsigned long motor_pd_count0 = 0;
+
 //
 //	皮带电机正转
 //
 void motor_pd_ctrl(enum enum_status mrun)
-{	
-	if(motor_pd_count != 2000)
+{
+	if(motor_pd_count != 200)
 		motor_pd_count++;
 	else
 	{
-		if(motor_pd_count0 != 10)
+		motor_pd_count = 0;
+		GPIO_Write(MOTOR_PD_GPIO,0x00);
+		switch(mrun)
 		{
-			motor_pd_count0++;
-			GPIO_Write(MOTOR_PD_GPIO,0x00);
+			case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
+			case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
+			case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
 		}
-		else
-		{
-			motor_pd_count0 = 0;
-			motor_pd_count = 0;
-			switch(mrun)
-			{
-				case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
-				case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
-				case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
-			}
-			motor_pd_setp == 4? (motor_pd_setp = 0):(motor_pd_setp = motor_pd_setp);
-		}
+		//GPIO_Write(MOTOR_PD_GPIO,0x00);
+		if(motor_pd_setp == 4) motor_pd_setp = 0;
 	}
 }
 
@@ -141,6 +140,7 @@ void motor_pd_ctrl(enum enum_status mrun)
 //
 void driver_init(void)
 {
+	usart_init();
 	led_init();
 	exti_init();
 	systick_init();

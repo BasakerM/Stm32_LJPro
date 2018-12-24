@@ -23,10 +23,10 @@ enum enum_device
 
 enum enum_status
 {
-	success = 0,fail = 1,exeing = 2,
-	open = 3,close = 4,
-	run_z = 5,run_f = 6,run_s = 7,
-	on = 8,off = 9
+	on = 0,off = 1,
+	open = 2,close = 3,
+	run_z = 4,run_f = 5,run_s = 6,
+	success = 7,fail = 8,exeing = 9
 };
 
 //////////////////////////////声明/////////////////////////////////

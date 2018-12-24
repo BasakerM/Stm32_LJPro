@@ -5,13 +5,15 @@
 #define METAL_PAPER
 
 unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
-unsigned char optin_code_get(unsigned char code);
-void usart_parsedat(unsigned char usart_dat,unsigned char* addr_flag,unsigned char* code_flag);
-void select(unsigned char a_flag,unsigned char c_flag);
+void usart_parsedat(unsigned char usart_dat,unsigned char* buff);
+void select(unsigned char* buff);
 
+unsigned char usart_rec_buff[4] = {0x00};
 unsigned char usart_dat_rec = 0x00;
 unsigned char addr_flag = 0x00;	//地址标志
 unsigned char code_flag = 0x00;	//操作码标志
+unsigned char dat0_flag = 0x00;	//数据包
+unsigned char dat1_flag = 0x00;	//数据包
 
 int main()
 {
@@ -21,9 +23,9 @@ int main()
 	{
 		//以下串口方式未使用循环,最深为三层嵌套判断,只占用极少的 cpu 时间
 		if(usart_getdat(USART_M,&usart_dat_rec))	//检测并接收串口数据
-			usart_parsedat(usart_dat_rec,&addr_flag,&code_flag);	//解析串口数据,若接收到规定的数据包则提取目标地址及操作码
+			usart_parsedat(usart_dat_rec,usart_rec_buff);	//解析串口数据,若接收到规定的数据包则提取目标地址及操作码
 		//进入选择
-		select(addr_flag,code_flag);
+		select(usart_rec_buff);
 	}
 }
 
@@ -32,16 +34,16 @@ int main()
 //	a_flag : 目标地址
 //	c_flag : 操作码
 //
-void select(unsigned char a_flag,unsigned char c_flag)
+void select(unsigned char* buff)
 {
-	switch(a_flag)
+	switch(buff[0])
 	{
 	#ifdef BOTTLE
-		case 0xA2: bottle_function(c_flag); break;	//瓶子
+		case 0xA2: bottle_function(buff); break;	//瓶子
 	#endif
 	#ifdef METAL_PAPER	
-		case 0xA3: metal_function(c_flag); break;	//金属
-		case 0xA4: paper_function(c_flag); break;	//纸类
+		case 0xA3: metal_function(buff); break;	//金属
+		case 0xA4: paper_function(buff); break;	//纸类
 	#endif
 	}
 	/**/
@@ -58,7 +60,7 @@ unsigned char datapack_index = 0;	//数据包的下标
 //	a_flag : 用于存储目标地址的变量
 //	c_flag : 用于存储操作码的变量
 //
-void usart_parsedat(unsigned char usart_dat,unsigned char* a_flag,unsigned char* c_flag)
+void usart_parsedat(unsigned char usart_dat,unsigned char* buff)
 {
 	switch(datapack_index)
 	{
@@ -75,43 +77,33 @@ void usart_parsedat(unsigned char usart_dat,unsigned char* a_flag,unsigned char*
 		case 5: if(optin_code_get(usart_dat))
 				{
 					crc_buff[3] = usart_dat;	//获取操作码
-					crc_result = crc(crc_buff,6);
 					datapack_index++;
 				}
 				else datapack_index = 0; break;	//判断获取操作码
-		case 6: if(usart_dat == 0x00) datapack_index++; else datapack_index = 0; break;	//确认数据包
-		case 7: if(usart_dat == 0x00) datapack_index++; else datapack_index = 0; break;	//确认数据包
+		case 6: if(usart_dat == 0x00)
+				{
+					crc_buff[4] = usart_dat;
+					datapack_index++; 
+				}
+				else datapack_index = 0; break;	//确认数据包
+		case 7: if(usart_dat == 0x00)
+				{
+					crc_buff[5] = usart_dat;
+					crc_result = crc(crc_buff,6);
+					datapack_index++; 
+				}
+				else datapack_index = 0; break;	//确认数据包
 		case 8: if(usart_dat == (crc_result>>8)) datapack_index++;	//确认CRC，否则清除
 				else { crc_result = 0x0000; datapack_index = 0; } break;
 		case 9: if(usart_dat == (crc_result&0x00ff))	//确认CRC，否则清除
 				{
-					*a_flag = crc_buff[2];	//获取目标地址
-					*c_flag = crc_buff[3];	//获取操作码
+					buff[0] = crc_buff[2];	//获取目标地址
+					buff[1] = crc_buff[3];	//获取操作码
+					buff[2] = crc_buff[4];	//获取数据包
+					buff[3] = crc_buff[5];	//获取数据包
 					datapack_index = 0;
 				}
 				else { crc_result = 0x0000; datapack_index = 0; } break;
-	}
-}
-
-//
-//	查询操作码,若无规定的操作码则返回0x00
-//	code : 要查询的操作码
-//	return : 返回已规定的操作码或返回0x00
-//
-unsigned char optin_code_get(unsigned char code)
-{
-	switch(code)
-	{
-		case 0xB1: return 0xB1;
-		case 0xB2: return 0xB2;
-		case 0xB3: return 0xB3;
-		case 0xB4: return 0xB4;
-		case 0xC1: return 0xC1;
-		case 0xC2: return 0xC2;
-		case 0xC3: return 0xC3;
-		case 0xC4: return 0xC4;
-		case 0xD1: return 0xD1;
-		default: return 0x00;
 	}
 }
 
