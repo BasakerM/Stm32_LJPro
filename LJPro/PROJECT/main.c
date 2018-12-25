@@ -80,13 +80,13 @@ void usart_parsedat(unsigned char usart_dat,unsigned char* buff)
 					datapack_index++;
 				}
 				else datapack_index = 0; break;	//判断获取操作码
-		case 6: if(usart_dat == 0x00)
+		case 6: if(usart_dat == 0x00 || usart_dat == 0xff)
 				{
 					crc_buff[4] = usart_dat;
 					datapack_index++; 
 				}
 				else datapack_index = 0; break;	//确认数据包
-		case 7: if(usart_dat == 0x00)
+		case 7: if(usart_dat == 0x00 || usart_dat == 0xff)
 				{
 					crc_buff[5] = usart_dat;
 					crc_result = crc(crc_buff,6);

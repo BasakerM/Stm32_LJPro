@@ -111,7 +111,7 @@ unsigned long motor_pd_count = 0;
 //
 void motor_pd_ctrl(enum enum_status mrun)
 {
-	if(motor_pd_count != 200)
+	if(motor_pd_count != 190)
 		motor_pd_count++;
 	else
 	{

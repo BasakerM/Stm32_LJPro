@@ -45,7 +45,7 @@ void bottle_opendoor(enum enum_event* e_flag,unsigned char* buff)
 	{
 		bottle_open_door_flag = 1;
 		usart_ack(usart_Buff_Send,bottle_addr,0xb1,0x00,0x00);	//发送响应
-		timeout_start(5);	//开启超时
+		timeout_start(OPEN_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_z);	//开门--正转
 	}
 }
@@ -75,7 +75,7 @@ void bottle_put(enum enum_event* e_flag,unsigned char* buff)
 	else
 	{
 		bottle_put_flag = 1;
-		timeout_start(10);	//开启超时
+		timeout_start(BOTTLE_PUT_DELAY);	//开启超时
 	}
 }
 
@@ -109,7 +109,7 @@ void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 	else
 	{
 		bottle_scanfcode_flag = 1;
-		timeout_start(5);	//开启超时
+		timeout_start(SCANF_CODE_DELAY);	//开启超时
 	}
 }
 
@@ -125,15 +125,17 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 		if(buff[1] == 0xbc && buff[2] == 0xff && buff[3] == 0xff)	//成功
 		{
 			bottle_ack_flag = 0;
-			usart_ack(usart_Buff_Send,bottle_addr,0xbb,0x00,0x00);	//发送响应
+			usart_ack(usart_Buff_Send,bottle_addr,0xbc,0xff,0xff);	//发送响应
 			timeout_end();
+			buff[1] = 0x00; buff[2] = 0x00; buff[3] = 0x00;
 			*e_flag = event_bottle_recycle;	//切换事件到回收
 		}
 		else if(buff[1] == 0xbc && buff[2] == 0x00 && buff[3] == 0x00)	//失败
 		{
 			bottle_ack_flag = 0;
-			usart_ack(usart_Buff_Send,bottle_addr,0xbb,0x00,0x00);	//发送响应
+			usart_ack(usart_Buff_Send,bottle_addr,0xbc,0x00,0x00);	//发送响应
 			timeout_end();
+			buff[1] = 0x00; buff[2] = 0x00; buff[3] = 0x00;
 			*e_flag = event_bottle_fail;	//切换事件到失败
 		}
 		else if(timeout_status_get())	//检查超时状态
@@ -147,7 +149,7 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 	else
 	{
 		bottle_ack_flag = 1;
-		timeout_start(20);	//开启超时
+		timeout_start(SCANF_CODE_ACK_DELAY);	//开启超时
 	}
 }
 
@@ -158,14 +160,15 @@ unsigned char bottle_recycle_flag = 0;
 void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 {
 	bottle_recycle_flag = 1;
-	timeout_start(5);	//开启超时
-	motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
+	timeout_start(RECYCLE_DELAY);	//开启超时
 	while(bottle_recycle_flag)	
 	{
+		motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
 		if(device_status_get(bottle_sensor_three) == on)	//检查光电3状态
 		{
 			bottle_recycle_flag = 0;
 			timeout_end();
+			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
 			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x00);	//发送回收成功的消息
 			*e_flag = event_bottle_put;	//切换事件到放入
 		}
@@ -173,6 +176,7 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_recycle_flag = 0;
 			timeout_end();
+			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
 			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x02);	//发送回收失败的消息
 			*e_flag = event_bottle_put;	//切换事件到放入
 		}
@@ -202,7 +206,7 @@ void bottle_fail(enum enum_event* e_flag,unsigned char* buff)
 	else
 	{
 		bottle_fail_flag = 1;
-		timeout_start(2);	//开启超时
+		timeout_start(FAIL_DELAY);	//开启超时
 	}
 }
 
@@ -235,7 +239,7 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 	{
 		bottle_closedoor_flag = 1;
 		usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
-		timeout_start(5);	//开启超时
+		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_f);	//关门--反转
 	}
 }
@@ -279,7 +283,7 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 {
 	switch(*e_flag)
 	{
-		case event_bottle_opendoor: LED_B(on); bottle_opendoor(e_flag,buff); break;
+		case event_bottle_opendoor: bottle_opendoor(e_flag,buff); break;
 		case event_bottle_put: bottle_put(e_flag,buff); break;
 		case event_bottle_scanfcode: bottle_scanfcode(e_flag,buff); break;
 		case event_bottle_ack: bottle_ack(e_flag,buff); break;
@@ -384,6 +388,16 @@ void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,uns
 	buff[8] = crc_result>>8;
 	buff[9] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,buff,10);
+}
+
+//
+//	清空缓冲区
+//
+void clear_buff(unsigned char* buff,unsigned char len)
+{
+	len--;
+	while(len--)
+		buff[len] = 0x00;
 }
 
 //

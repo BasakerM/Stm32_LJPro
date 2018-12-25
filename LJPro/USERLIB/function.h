@@ -4,6 +4,14 @@
 #include <stm32f10x.h>
 #include "driver.h"
 
+#define OPEN_DOOR_DELAY 20
+#define BOTTLE_PUT_DELAY 60
+#define SCANF_CODE_DELAY 20
+#define SCANF_CODE_ACK_DELAY 20
+#define RECYCLE_DELAY 20
+#define FAIL_DELAY 2
+#define CLOSE_DOOR_DELAY 20
+
 #define REC_BUFF_INDEX_ADDR 0
 #define REC_BUFF_INDEX_CODE 1
 #define REC_BUFF_INDEX_DAT0 2
