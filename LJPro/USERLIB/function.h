@@ -8,7 +8,7 @@
 #define BOTTLE_PUT_DELAY 60
 #define SCANF_CODE_DELAY 20
 #define SCANF_CODE_ACK_DELAY 20
-#define RECYCLE_DELAY 20
+#define RECYCLE_DELAY 20 //
 #define FAIL_DELAY 2
 #define CLOSE_DOOR_DELAY 20
 
@@ -26,8 +26,9 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff);
 void bottle_fail(enum enum_event* e_flag,unsigned char* buff);
 void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff);
 //结构
+void event_select(enum enum_event* e_flag,unsigned char* buff);
 void event_exe(enum enum_event* e_flag,unsigned char* buff);
-enum enum_event event_select(enum enum_event e_flag,unsigned char c_flag);
+void clear_flag(unsigned char* buff);
 unsigned char optin_code_get(unsigned char code);
 void bottle_function(unsigned char* buff);
 void metal_function(unsigned char* buff);

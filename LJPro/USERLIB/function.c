@@ -5,6 +5,10 @@ unsigned char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
 unsigned char bottle_addr = 0xA2;
 unsigned char metal_addr = 0xA3;
 unsigned char paper_addr = 0xA4;
+/*struct bottle_flag
+{
+	unsigned char bottle_open_door_flag = 0;
+}*/
 
 ///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +95,6 @@ void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_scanfcode_flag = 0;
 			motor_ctrl(bottle_motor_recycle,run_s);	//停止转动
-			GPIO_Write(MOTOR_PD_GPIO,0x00);	//停止对皮带电机的输出
 			timeout_end();
 			usart_ack(usart_Buff_Send,bottle_addr,0xbb,0x00,0x00);	//发送获取扫码结果消息
 			*e_flag = event_bottle_ack;	//切换事件到确认
@@ -100,15 +103,14 @@ void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_scanfcode_flag = 0;
 			motor_ctrl(bottle_motor_recycle,run_s);	//停止转动
-			GPIO_Write(MOTOR_PD_GPIO,0x00);	//停止对皮带电机的输出
 			timeout_end();
 			*e_flag = event_bottle_put;	//切换事件到放入
 		}
-		else motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
 	}
 	else
 	{
 		bottle_scanfcode_flag = 1;
+		motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
 		timeout_start(SCANF_CODE_DELAY);	//开启超时
 	}
 }
@@ -121,7 +123,6 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 {
 	if(bottle_ack_flag)	
 	{
-		LED_B(on);
 		if(buff[1] == 0xbc && buff[2] == 0xff && buff[3] == 0xff)	//成功
 		{
 			bottle_ack_flag = 0;
@@ -160,6 +161,7 @@ unsigned char bottle_recycle_flag = 0;
 void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 {
 	bottle_recycle_flag = 1;
+	if(buff[REC_BUFF_INDEX_CODE] == 0xc1) usart_ack(usart_Buff_Send,bottle_addr,0xc1,0x00,0x00);	//强制回收情况下发送应答消息
 	timeout_start(RECYCLE_DELAY);	//开启超时
 	while(bottle_recycle_flag)	
 	{
@@ -169,16 +171,33 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 			bottle_recycle_flag = 0;
 			timeout_end();
 			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
-			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x00);	//发送回收成功的消息
-			*e_flag = event_bottle_put;	//切换事件到放入
+			if(buff[REC_BUFF_INDEX_CODE] == 0xc1)
+			{
+				usart_ack(usart_Buff_Send,bottle_addr,0xc2,0xff,0xff);	//强制回收情况下的成功消息
+				*e_flag = event_none;	//切换事件到none
+			}
+			else 
+			{
+				usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x00);	//正常回收情况下发送回收成功的消息
+				*e_flag = event_bottle_put;	//切换事件到放入
+			}
+			
 		}
 		else if(timeout_status_get())	//检查超时状态
 		{
 			bottle_recycle_flag = 0;
 			timeout_end();
 			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
-			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x02);	//发送回收失败的消息
-			*e_flag = event_bottle_put;	//切换事件到放入
+			if(buff[REC_BUFF_INDEX_CODE] == 0xc1)
+			{
+				usart_ack(usart_Buff_Send,bottle_addr,0xc2,0x00,0x00);	//强制回收情况下的失败消息
+				*e_flag = event_none;	//切换事件到none
+			}
+			else
+			{
+				usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x02);	//正常回收情况下发送回收失败的消息
+				*e_flag = event_bottle_put;	//切换事件到放入
+			}
 		}
 	}
 }
@@ -195,6 +214,7 @@ void bottle_fail(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_fail_flag = 0;
 			timeout_end();
+			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x01);	//发送用户取回物品的消息
 			*e_flag = event_bottle_put;	//切换事件到放入
 		}
 		else if(device_status_get(bottle_sensor_two) == on)	//检查光电2状态
@@ -223,7 +243,8 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			bottle_closedoor_flag = 0;
 			motor_ctrl(bottle_motor_door,run_s);	//停止转动
 			timeout_end();	//关闭超时
-			usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xff,0xff);	//发送成功消息
+			if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xee,0xee);	//发送成功消息(强制回收情况下)
+			else usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xff,0xff);	//发送成功消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
 		else if(timeout_status_get())	//检查超时状态
@@ -231,14 +252,22 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			bottle_closedoor_flag = 0;
 			motor_ctrl(bottle_motor_door,run_s);	//停止转动
 			timeout_end();
-			usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x00,0x00);	//发送失败消息
+			if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x11,0x11);	//发送失败消息(强制回收情况下)
+			else usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
 	}
 	else	//首次进入
 	{
+		if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
+		{
+			usart_ack(usart_Buff_Send,bottle_addr,0xb9,0x00,0x00);	//发送刷新消息
+			*e_flag = event_none;	//切换事件到none
+			return;
+		}
 		bottle_closedoor_flag = 1;
-		usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
+		if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x01);	//发送响应(强制回收情况下)
+		else usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
 		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_f);	//关门--反转
 	}
@@ -253,24 +282,21 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 
 //
 //	事件选择函数		////////考虑事件切换时是否初始化设备状态,避免在一个事件未结束前 代码强行切换事件,导致上一个事件中启动的设备依旧运行 造成异常////////////////
-//	c_falg : 通信数据中的代码
-//	e_flag : 当前事件
-//	return : 如果代码不变则返回当前事件,如果代码变更则返回代码对应的事件
+//	e_flag : 事件
+//	buff : 存储了数据包中的 目标地址、操作码、数据0、数据1 的缓冲区
 //
-unsigned char c_flag_old = 0x00;	//用于记录上次触发事件的c_flag,避免同一个c_flag重复触发事件
-enum enum_event event_select(enum enum_event e_flag,unsigned char c_flag)
+unsigned char old_code = 0x00;	//用于记录上次触发事件的code,避免同一个code重复触发事件
+void event_select(enum enum_event* e_flag,unsigned char* buff)
 {
-	if(c_flag == c_flag_old)	//c_flag 没有变更
-		return e_flag;	//则返回当前事件
-	else
+	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code)	//code 变更
 	{
-		c_flag_old = c_flag;
-		switch(c_flag)
+		old_code = buff[REC_BUFF_INDEX_CODE];
+		switch(buff[REC_BUFF_INDEX_CODE])
 		{
-			case 0xb1: return event_bottle_opendoor;	//开门事件
-			case 0xb3: return event_bottle_closedoor;	//关门事件
+			case 0xb1: clear_flag(buff); *e_flag = event_bottle_opendoor; break;	//开门事件
+			case 0xb3: clear_flag(buff); *e_flag = event_bottle_closedoor; break;	//关门事件
+			case 0xc1:  clear_flag(buff); *e_flag = event_bottle_recycle; break;	//强制回收事件
 		}
-		return e_flag;	//代码变更且无对应事件,则认为无事件触发
 	}
 }
 
@@ -290,8 +316,24 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 		case event_bottle_recycle: bottle_recycle(e_flag,buff); break;
 		case event_bottle_fail: bottle_fail(e_flag,buff); break;
 		case event_bottle_closedoor: bottle_closedoor(e_flag,buff); break;
-		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; c_flag_old = 0x00; break;
+		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; old_code = 0x00; break;
 	}
+}
+
+//
+//	清除事件相关变量
+//
+void clear_flag(unsigned char* buff)
+{
+	//buff[REC_BUFF_INDEX_ADDR] = 0x00; buff[REC_BUFF_INDEX_CODE] = 0x00;
+	//buff[REC_BUFF_INDEX_DAT0] = 0x00; buff[REC_BUFF_INDEX_DAT1] = 0x00;
+	bottle_open_door_flag = 0;
+	bottle_put_flag = 0;
+	bottle_scanfcode_flag = 0;
+	bottle_ack_flag = 0;
+	bottle_recycle_flag = 0;
+	bottle_fail_flag = 0;
+	bottle_closedoor_flag = 0;
 }
 
 //
@@ -318,6 +360,7 @@ unsigned char optin_code_get(unsigned char code)
 		case 0xBD: return 0xBD;
 		case 0xBE: return 0xBE;
 		case 0xBF: return 0xBF;
+		case 0xC1: return 0xC1;
 		default: return 0x00;
 	}
 }
@@ -329,7 +372,7 @@ enum enum_event run_event = event_none;	//程序当前运行的事件,所有部�
 //
 void bottle_function(unsigned char* buff)
 {
-	run_event = event_select(run_event,buff[REC_BUFF_INDEX_CODE]);
+	event_select(&run_event,buff);
 	event_exe(&run_event,buff);
 }
 
@@ -338,7 +381,7 @@ void bottle_function(unsigned char* buff)
 //
 void metal_function(unsigned char* buff)
 {
-	run_event = event_select(run_event,buff[REC_BUFF_INDEX_CODE]);
+	event_select(&run_event,buff);
 	event_exe(&run_event,buff);
 }
 
@@ -347,7 +390,7 @@ void metal_function(unsigned char* buff)
 //
 void paper_function(unsigned char* buff)
 {
-	run_event = event_select(run_event,buff[REC_BUFF_INDEX_CODE]);
+	event_select(&run_event,buff);
 	event_exe(&run_event,buff);
 }
 
@@ -388,16 +431,6 @@ void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,uns
 	buff[8] = crc_result>>8;
 	buff[9] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,buff,10);
-}
-
-//
-//	清空缓冲区
-//
-void clear_buff(unsigned char* buff,unsigned char len)
-{
-	len--;
-	while(len--)
-		buff[len] = 0x00;
 }
 
 //

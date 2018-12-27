@@ -5,6 +5,7 @@
 //	device : 电机设备类型(在deiver.h中定义有枚举)
 //	mrun : 电机运行模式类型(在deiver.h中定义有枚举)
 //
+enum enum_status motor_pd_mode = run_s;
 void motor_ctrl(enum enum_device device,enum enum_status mrun)
 {
 	if(device == metal_motor)	//金属推杆电机
@@ -36,7 +37,12 @@ void motor_ctrl(enum enum_device device,enum enum_status mrun)
 	}
 	else if(device == bottle_motor_recycle)	//瓶子皮带电机
 	{
-		motor_pd_ctrl(mrun);
+		switch(mrun)
+		{
+			case run_z: motor_pd_mode = run_z; break;
+			case run_f: motor_pd_mode = run_f; break;
+			case run_s: motor_pd_mode = run_s;  break;
+		}
 	}
 }
 
@@ -95,37 +101,56 @@ enum enum_status device_status_get(enum enum_device d_flag)
 	return exeing;
 }
 
-void delay(int ms)
-{
-	for(int i = 0;i < ms;i++)
-		for(int k = 0;k < 2000;k++);
-}
-
 unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
 unsigned char motor_pd_f_setp[4] = {0x08,0x04,0x02,0x01};
 unsigned char motor_pd_setp = 0;
-unsigned long motor_pd_count = 0;
-
 //
-//	皮带电机正转
+//	皮带电机控制
 //
 void motor_pd_ctrl(enum enum_status mrun)
 {
-	if(motor_pd_count != 190)
-		motor_pd_count++;
-	else
+	GPIO_Write(MOTOR_PD_GPIO,0x00);
+	switch(mrun)
 	{
-		motor_pd_count = 0;
-		GPIO_Write(MOTOR_PD_GPIO,0x00);
-		switch(mrun)
-		{
-			case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
-			case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
-			case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
-		}
-		//GPIO_Write(MOTOR_PD_GPIO,0x00);
-		if(motor_pd_setp == 4) motor_pd_setp = 0;
+		case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
+		case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
+		case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
 	}
+	if(motor_pd_setp == 4) motor_pd_setp = 0;
+}
+//
+//	HX711 读取重量
+//
+unsigned int get_weight(void)
+{
+	unsigned long adc = 0;
+	HX711_CK_OUT(0);
+	while(HX711_DO_GET);
+	for(unsigned char i = 0;i < 24;i++)
+	{
+		HX711_CK_OUT(1);
+		adc <<= 1;
+		if(HX711_DO_GET) adc++;
+		HX711_CK_OUT(0);
+	}
+	HX711_CK_OUT(1);
+	adc = adc^0x800000;
+	HX711_CK_OUT(0);
+	adc = (3.3/16777216)*adc*1000;
+	unsigned char num[10] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
+	num[0] = adc/1000 + '0';
+	num[2] = (adc/100)%10 + '0';
+	num[3] = (adc/10)%10 + '0';
+	num[4] = adc%10 + '0';
+	usart_send_str(USART_M,"now voltage: ");
+	usart_send_str(USART_M,num);
+	/*unsigned char d1 = adc>>16;
+	unsigned char d2 = (adc>>8)&0x00ff;
+	unsigned char d3 = adc&0x0000ff;
+	usart_send(USART_M,&d1,1);
+	usart_send(USART_M,&d2,1);
+	usart_send(USART_M,&d3,1);*/
+	return 0;
 }
 
 ///////////////////////////以下为 STM32 功能初始化部分/////////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +170,35 @@ void driver_init(void)
 	exti_init();
 	systick_init();
 	motor_init();
+	tim_init();
+	hx711_init();
+
+	while(1)
+	{
+		if(timeout_status_get()) 
+		{
+			get_weight();
+			timeout_start(1);
+		}
+	}
+}
+
+//
+//	初始化HX711
+//
+void hx711_init(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	RCC_APB2PeriphClockCmd(HX711_RCC,ENABLE);
+	//时钟线
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;	//推挽输出
+	GPIO_InitStructure.GPIO_Pin = HX711_CK_PIN;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(HX711_GPIO,&GPIO_InitStructure);
+	//数据线
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;	//上拉输入
+	GPIO_InitStructure.GPIO_Pin = HX711_DO_PIN;
+	GPIO_Init(HX711_GPIO,&GPIO_InitStructure);
 }
 
 //
@@ -190,14 +244,41 @@ void led_init(void)
 }
 
 //
+//	初始化定时器2(用于步进电机的驱动)
+//
+void tim_init(void)
+{
+	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
+	TIM_TimeBaseStructure.TIM_Period = 12;
+	TIM_TimeBaseStructure.TIM_Prescaler =7199;
+	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;	//向上计数模式
+	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+
+	TIM_ITConfig(TIM2,TIM_IT_Update,ENABLE );
+
+	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 6;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+
+	TIM_Cmd(TIM2, ENABLE);
+}
+
+//
 //	初始化外部中断
+//	宏定义参考 driver.h 文件中的定义
 //
 void exti_init(void)
 {	//初始化外部中断的GPIO
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(INTERRUPT_RCC,ENABLE);
 	
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;	//上拉输入
 	GPIO_InitStructure.GPIO_Pin = INTERRUPT_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(INTERRUPT_GPIO,&GPIO_InitStructure);
@@ -208,8 +289,8 @@ void exti_init(void)
 	//中断线0为跳变沿触发---金属光电
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOD,GPIO_PinSource0);
 	EXTI_InitStructure.EXTI_Line=EXTI_Line0;
-	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;
-	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;
+	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;	//中断模式
+	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising_Falling;	//跳变沿触发
 	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
 	EXTI_Init(&EXTI_InitStructure);
 	//中断线1为跳变沿触发---纸类光电
@@ -260,12 +341,12 @@ void exti_init(void)
 	EXTI_Init(&EXTI_InitStructure);
 	
 	//配置中断优先级
-	//中断线0-4为同一优先级
+	//中断线0-4为同一子优先级
  	NVIC_InitTypeDef NVIC_InitStructure;
-	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x02;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;	//中断通道
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x02;	//抢占优先级
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;	//子优先级
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;	//使能
 	NVIC_Init(&NVIC_InitStructure);
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI1_IRQn;
 	NVIC_Init(&NVIC_InitStructure);
@@ -275,11 +356,11 @@ void exti_init(void)
 	NVIC_Init(&NVIC_InitStructure);
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI4_IRQn;
 	NVIC_Init(&NVIC_InitStructure);
-	//中断线5-9为同一优先级
+	//中断线5-9为同一子优先级
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI9_5_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x04;
 	NVIC_Init(&NVIC_InitStructure);
-	//中断线10-15为同一优先级
+	//中断线10-15为同一子优先级
 	NVIC_InitStructure.NVIC_IRQChannel = EXTI15_10_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x05;
 	NVIC_Init(&NVIC_InitStructure);
@@ -292,6 +373,19 @@ void exti_init(void)
 ///////////////////////////以下为中断函数处理部分/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为中断函数处理部分/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为中断函数处理部分/////////////////////////////////////////////////////////////////////////////////////
+
+//
+//	定时器使用该中断函数
+//
+void TIM2_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET)
+	{
+		motor_pd_ctrl(motor_pd_mode);
+		TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
+	}
+}
+
 //
 //	中断线0使用该中断函数
 //

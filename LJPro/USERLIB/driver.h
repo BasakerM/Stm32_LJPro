@@ -33,9 +33,12 @@ enum enum_status
 void motor_ctrl(enum enum_device device,enum enum_status mrun);
 enum enum_status device_status_get(enum enum_device device);
 void motor_pd_ctrl(enum enum_status mrun);
+unsigned int get_weight(void);
 void driver_init(void);
+void hx711_init(void);
 void motor_init(void);
 void led_init(void);
+void tim_init(void);
 void exti_init(void);
 
 //////////////////////////////定义/////////////////////////////////
@@ -63,8 +66,13 @@ void exti_init(void);
 #define MOTOR_PD_RCC RCC_APB2Periph_GPIOF
 #define MOTOR_PD_GPIO GPIOF
 #define MOTOR_PD_PIN GPIO_Pin_All
+//HX711
+#define HX711_RCC RCC_APB2Periph_GPIOE
+#define HX711_GPIO GPIOE
+#define HX711_CK_PIN GPIO_Pin_0
+#define HX711_DO_PIN GPIO_Pin_1
 
-//////////////////////////////控制/////////////////////////////////
+////////////////////////////// IO 操作/////////////////////////////////
 //电平宏
 #define HIGH 1
 #define LOW 0
@@ -80,6 +88,9 @@ void exti_init(void);
 //板载led
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
+//HX711
+#define HX711_CK_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
+#define HX711_DO_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
 
 
 #endif
