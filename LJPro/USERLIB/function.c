@@ -17,6 +17,8 @@ unsigned char paper_addr = 0xA4;
 ///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////瓶子部分功能////////////////////////////////////////////////////////////////////////////
+
 //
 //	瓶子开门事件对应功能流程
 //	e_flag : 当前事件
@@ -273,6 +275,38 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 	}
 }
 
+//////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
+
+//
+//	金属开门事件对应功能流程
+//	e_flag : 当前事件
+//	c_flag : 当前代码
+//
+unsigned char metal_open_door_flag = 0;
+void metal_opendoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(metal_open_door_flag)	//非首次进入
+	{
+		if(timeout_status_get())	//检查超时状态
+		{
+			//已超时
+			metal_open_door_flag = 0;
+			motor_ctrl(metal_motor,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,metal_addr,0xb2,0x00,0x00);	//发送失败消息
+			*e_flag = event_metal_put;	//切换事件到put
+		}
+	}
+	else	//首次进入
+	{
+		metal_open_door_flag = 1;
+		usart_ack(usart_Buff_Send,metal_addr,0xb1,0x00,0x00);	//发送响应
+		timeout_start(OPEN_DOOR_DELAY);	//开启超时
+		motor_ctrl(metal_motor,run_z);	//开门--正转
+	}
+}
+
+
 ///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
@@ -295,7 +329,7 @@ void event_select(enum enum_event* e_flag,unsigned char* buff)
 		{
 			case 0xb1: clear_flag(buff); *e_flag = event_bottle_opendoor; break;	//开门事件
 			case 0xb3: clear_flag(buff); *e_flag = event_bottle_closedoor; break;	//关门事件
-			case 0xc1:  clear_flag(buff); *e_flag = event_bottle_recycle; break;	//强制回收事件
+			case 0xc1: clear_flag(buff); *e_flag = event_bottle_recycle; break;	//强制回收事件
 		}
 	}
 }

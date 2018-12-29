@@ -97,6 +97,18 @@ enum enum_status device_status_get(enum enum_device d_flag)
 				return on;
 			else
 				return off;
+		//金属光电////////////////////////////////
+		case metal_sensor:
+			if(exti_line0 == on)
+				return on;
+			else
+				return off;
+		//纸类光电////////////////////////////////
+		case paper_sensor:
+			if(exti_line1 == on)
+				return on;
+			else
+				return off;
 	}
 	return exeing;
 }

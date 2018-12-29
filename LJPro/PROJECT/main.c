@@ -1,9 +1,5 @@
 #include "function.h"
 
-//该处的宏用于select函数中的预编译,若为瓶子部分的主控板则注释第二个宏
-#define BOTTLE
-#define METAL_PAPER
-
 unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
 void usart_parsedat(unsigned char usart_dat,unsigned char* buff);
 void select(unsigned char* buff);
