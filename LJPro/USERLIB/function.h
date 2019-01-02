@@ -30,6 +30,7 @@ void event_select(enum enum_event* e_flag,unsigned char* buff);
 void event_exe(enum enum_event* e_flag,unsigned char* buff);
 void clear_flag(unsigned char* buff);
 unsigned char optin_code_get(unsigned char code);
+void function(unsigned char* buff);
 void bottle_function(unsigned char* buff);
 void metal_function(unsigned char* buff);
 void paper_function(unsigned char* buff);

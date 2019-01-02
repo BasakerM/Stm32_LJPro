@@ -2,14 +2,9 @@
 
 unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
 void usart_parsedat(unsigned char usart_dat,unsigned char* buff);
-void select(unsigned char* buff);
 
 unsigned char usart_rec_buff[4] = {0x00};
 unsigned char usart_dat_rec = 0x00;
-unsigned char addr_flag = 0x00;	//地址标志
-unsigned char code_flag = 0x00;	//操作码标志
-unsigned char dat0_flag = 0x00;	//数据包
-unsigned char dat1_flag = 0x00;	//数据包
 
 int main()
 {
@@ -17,32 +12,10 @@ int main()
 	
 	while(1)
 	{
-		//以下串口方式未使用循环,最深为三层嵌套判断,只占用极少的 cpu 时间
 		if(usart_getdat(USART_M,&usart_dat_rec))	//检测并接收串口数据
-			usart_parsedat(usart_dat_rec,usart_rec_buff);	//解析串口数据,若接收到规定的数据包则提取目标地址及操作码
-		//进入选择
-		select(usart_rec_buff);
+			usart_parsedat(usart_dat_rec,usart_rec_buff);	//解析串口数据,若接收到规定的数据包则提取目标地址、操作码、数据包
+		function(usart_rec_buff);
 	}
-}
-
-//
-//	根据目标地址选择动作
-//	a_flag : 目标地址
-//	c_flag : 操作码
-//
-void select(unsigned char* buff)
-{
-	switch(buff[0])
-	{
-	#ifdef BOTTLE
-		case 0xA2: bottle_function(buff); break;	//瓶子
-	#endif
-	#ifdef METAL_PAPER	
-		case 0xA3: metal_function(buff); break;	//金属
-		case 0xA4: paper_function(buff); break;	//纸类
-	#endif
-	}
-	/**/
 }
 
 unsigned char crc_buff[6] = {0x08,0xA1,0x00,0x00,0x00,0x00};	//用于计算crc的数据缓冲区

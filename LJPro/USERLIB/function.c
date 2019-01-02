@@ -402,6 +402,16 @@ unsigned char optin_code_get(unsigned char code)
 enum enum_event run_event = event_none;	//程序当前运行的事件,所有部分共用该事件变量,如此则可以在事件选择部分做地址意外切换导致的事件强行变更问题
 
 //
+//
+//
+void function(unsigned char* buff)
+{
+	#ifdef BOTTLE
+		case 0xA2;
+	#endif
+}
+
+//
 //	瓶子部分的功能
 //
 void bottle_function(unsigned char* buff)
