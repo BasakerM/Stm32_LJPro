@@ -184,15 +184,6 @@ void driver_init(void)
 	motor_init();
 	tim_init();
 	hx711_init();
-
-	while(1)
-	{
-		if(timeout_status_get()) 
-		{
-			get_weight();
-			timeout_start(1);
-		}
-	}
 }
 
 //

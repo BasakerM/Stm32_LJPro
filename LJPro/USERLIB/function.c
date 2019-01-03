@@ -1,6 +1,5 @@
 #include "function.h"
 
-
 unsigned char usart_Buff_Send[16] = {0x00};	//串口发送缓冲区
 unsigned char bottle_addr = 0xA2;
 unsigned char metal_addr = 0xA3;
@@ -125,7 +124,7 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 {
 	if(bottle_ack_flag)	
 	{
-		if(buff[1] == 0xbc && buff[2] == 0xff && buff[3] == 0xff)	//成功
+		if(buff[REC_BUFF_INDEX_CODE] == 0xbc && buff[REC_BUFF_INDEX_DAT0] == 0xff && buff[REC_BUFF_INDEX_DAT1] == 0xff)	//成功
 		{
 			bottle_ack_flag = 0;
 			usart_ack(usart_Buff_Send,bottle_addr,0xbc,0xff,0xff);	//发送响应
@@ -133,7 +132,7 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 			buff[1] = 0x00; buff[2] = 0x00; buff[3] = 0x00;
 			*e_flag = event_bottle_recycle;	//切换事件到回收
 		}
-		else if(buff[1] == 0xbc && buff[2] == 0x00 && buff[3] == 0x00)	//失败
+		else if(buff[REC_BUFF_INDEX_CODE] == 0xbc && buff[REC_BUFF_INDEX_DAT0] == 0x00 && buff[REC_BUFF_INDEX_DAT1] == 0x00)	//失败
 		{
 			bottle_ack_flag = 0;
 			usart_ack(usart_Buff_Send,bottle_addr,0xbc,0x00,0x00);	//发送响应
@@ -245,7 +244,7 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			bottle_closedoor_flag = 0;
 			motor_ctrl(bottle_motor_door,run_s);	//停止转动
 			timeout_end();	//关闭超时
-			if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xee,0xee);	//发送成功消息(强制回收情况下)
+			if(buff[REC_BUFF_INDEX_DAT1] == 0x01) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xee,0xee);	//发送成功消息(强制回收情况下)
 			else usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xff,0xff);	//发送成功消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
@@ -254,7 +253,7 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			bottle_closedoor_flag = 0;
 			motor_ctrl(bottle_motor_door,run_s);	//停止转动
 			timeout_end();
-			if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x11,0x11);	//发送失败消息(强制回收情况下)
+			if(buff[REC_BUFF_INDEX_DAT1] == 0x01) usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x11,0x11);	//发送失败消息(强制回收情况下)
 			else usart_ack(usart_Buff_Send,bottle_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
@@ -268,7 +267,7 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			return;
 		}
 		bottle_closedoor_flag = 1;
-		if(buff[REC_BUFF_INDEX_DAT1 == 0x01]) usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x01);	//发送响应(强制回收情况下)
+		if(buff[REC_BUFF_INDEX_DAT1] == 0x01) usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x01);	//发送响应(强制回收情况下)
 		else usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
 		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_f);	//关门--反转
@@ -320,7 +319,7 @@ void metal_opendoor(enum enum_event* e_flag,unsigned char* buff)
 //	buff : 存储了数据包中的 目标地址、操作码、数据0、数据1 的缓冲区
 //
 unsigned char old_code = 0x00;	//用于记录上次触发事件的code,避免同一个code重复触发事件
-void event_select(enum enum_event* e_flag,unsigned char* buff)
+void event_select_bottle(enum enum_event* e_flag,unsigned char* buff)
 {
 	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code)	//code 变更
 	{
@@ -406,44 +405,17 @@ enum enum_event run_event = event_none;	//程序当前运行的事件,所有部�
 //
 void function(unsigned char* buff)
 {
-	#ifdef BOTTLE
-		case 0xA2;
-	#endif
+	switch(buff[REC_BUFF_INDEX_ADDR])
+	{
+		#ifdef BOTTLE
+			case 0xA2: event_select_bottle(&run_event,buff); event_exe(&run_event,buff); break;
+		#endif
+		#ifdef METAL_PAPER
+			case 0xA3: break;
+			case 0xA4: break;
+		#endif
+	}
 }
-
-//
-//	瓶子部分的功能
-//
-void bottle_function(unsigned char* buff)
-{
-	event_select(&run_event,buff);
-	event_exe(&run_event,buff);
-}
-
-//
-//	金属部分的功能
-//
-void metal_function(unsigned char* buff)
-{
-	event_select(&run_event,buff);
-	event_exe(&run_event,buff);
-}
-
-//
-//	纸类部分的功能
-//
-void paper_function(unsigned char* buff)
-{
-	event_select(&run_event,buff);
-	event_exe(&run_event,buff);
-}
-
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 
 //
 //	初始化函数
@@ -452,6 +424,13 @@ void function_init(void)
 {
 	driver_init();
 }
+
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
 
 //
 //	往串口发送消息

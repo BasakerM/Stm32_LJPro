@@ -23,7 +23,6 @@ unsigned short crc_result = 0x0000;	//crc的计算结果
 unsigned char datapack_index = 0;	//数据包的下标
 //
 //	解析来自串口的数据,只提取规定的协议
-//	使用该方法尽量减少接收和解析串口数据时对cpu的占用时间
 //	解析完成后将给出数据包的目标地址和操作码
 //	usart_dat : 当前接收到的串口数据
 //	a_flag : 用于存储目标地址的变量
