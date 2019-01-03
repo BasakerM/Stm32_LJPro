@@ -10,8 +10,8 @@ enum enum_event
 {
 	event_none = 0,event_bottle_opendoor = 1,event_bottle_closedoor = 2,
 	event_bottle_put = 3,event_bottle_scanfcode = 4,event_bottle_ack = 5,event_bottle_recycle = 6,event_bottle_fail = 7,
-	event_metal_opendoor = 8,event_metal_closedoor = 9,event_metal_put = 10,event_metal_recycle = 11,
-	event_paper_opendoor = 12,event_paper_closedoor = 13,event_paper_put = 14,event_paper_recycle = 15
+	event_metal_opendoor = 8,event_metal_closedoor = 9,event_metal_put = 10,event_metal_recycle = 11,event_metal_weigh = 12,
+	event_paper_opendoor = 13,event_paper_closedoor = 14,event_paper_put = 15,event_paper_recycle = 16,event_paper_weigh = 17
 };
 
 enum enum_device
@@ -34,7 +34,7 @@ enum enum_status
 //////////////////////////////声明/////////////////////////////////
 void motor_ctrl(enum enum_device device,enum enum_status mrun);
 enum enum_status device_status_get(enum enum_device device);
-void motor_pd_ctrl(enum enum_status mrun);
+//void motor_pd_ctrl(enum enum_status mrun);
 unsigned int get_weight(void);
 void driver_init(void);
 void hx711_init(void);
@@ -62,12 +62,16 @@ void exti_init(void);
 #define MOTOR_METAL_PIN_OUT2 GPIO_Pin_1
 #define MOTOR_PAPER_PIN_OUT1 GPIO_Pin_2//纸类电机引脚
 #define MOTOR_PAPER_PIN_OUT2 GPIO_Pin_3
-#define MOTOR_BOTTLE_K_PIN_OUT1 GPIO_Pin_8//瓶子开门引脚
-#define MOTOR_BOTTLE_K_PIN_OUT2 GPIO_Pin_9
-//皮带电机
+#define MOTOR_BOTTLE_K_PIN_OUT1 GPIO_Pin_4//瓶子开门引脚
+#define MOTOR_BOTTLE_K_PIN_OUT2 GPIO_Pin_5
+#define MOTOR_BOTTLE_P_PIN_OUT1 GPIO_Pin_6//瓶子皮带引脚
+#define MOTOR_BOTTLE_P_PIN_OUT2 GPIO_Pin_7
+
+//皮带电机	弃用
 #define MOTOR_PD_RCC RCC_APB2Periph_GPIOF
 #define MOTOR_PD_GPIO GPIOF
 #define MOTOR_PD_PIN GPIO_Pin_All
+
 //HX711
 #define HX711_RCC RCC_APB2Periph_GPIOE
 #define HX711_GPIO GPIOE
@@ -87,6 +91,9 @@ void exti_init(void);
 //瓶子开门
 #define MOTOR_BOTTLE_K_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_RESET)
 #define MOTOR_BOTTLE_K_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_RESET)
+//瓶子皮带
+#define MOTOR_BOTTLE_P_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
+#define MOTOR_BOTTLE_P_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
 //板载led
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)

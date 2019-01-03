@@ -39,9 +39,14 @@ void motor_ctrl(enum enum_device device,enum enum_status mrun)
 	{
 		switch(mrun)
 		{
+			case run_z: MOTOR_BOTTLE_P_OUT1(HIGH); MOTOR_BOTTLE_P_OUT2(LOW); break;	//正转
+			case run_f: MOTOR_BOTTLE_P_OUT1(LOW); MOTOR_BOTTLE_P_OUT2(HIGH); break;	//反转
+			case run_s: MOTOR_BOTTLE_P_OUT1(LOW); MOTOR_BOTTLE_P_OUT2(LOW); break;	//停止
+			/*
 			case run_z: motor_pd_mode = run_z; break;
 			case run_f: motor_pd_mode = run_f; break;
 			case run_s: motor_pd_mode = run_s;  break;
+			*/
 		}
 	}
 }
@@ -113,6 +118,7 @@ enum enum_status device_status_get(enum enum_device d_flag)
 	return exeing;
 }
 
+/*
 unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
 unsigned char motor_pd_f_setp[4] = {0x08,0x04,0x02,0x01};
 unsigned char motor_pd_setp = 0;
@@ -130,6 +136,8 @@ void motor_pd_ctrl(enum enum_status mrun)
 	}
 	if(motor_pd_setp == 4) motor_pd_setp = 0;
 }
+*/
+
 //
 //	HX711 读取重量
 //
@@ -182,7 +190,7 @@ void driver_init(void)
 	exti_init();
 	systick_init();
 	motor_init();
-	tim_init();
+	//tim_init();	弃用
 	hx711_init();
 }
 
@@ -211,12 +219,12 @@ void motor_init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(MOTOR_RCC|MOTOR_PD_RCC,ENABLE);
-	//开门,金属,电机
+	//开门,金属,电机,皮带
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Pin = MOTOR_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(MOTOR_GPIO,&GPIO_InitStructure);
-	//皮带电机
+	//皮带电机 弃用
 	GPIO_InitStructure.GPIO_Pin = MOTOR_PD_PIN;
 	GPIO_Init(MOTOR_PD_GPIO,&GPIO_InitStructure);
 
@@ -384,7 +392,7 @@ void TIM2_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET)
 	{
-		motor_pd_ctrl(motor_pd_mode);
+		//motor_pd_ctrl(motor_pd_mode);
 		TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
 	}
 }

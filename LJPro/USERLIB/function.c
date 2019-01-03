@@ -17,6 +17,8 @@ unsigned char paper_addr = 0xA4;
 ///////////////////////////以下为功能实现,流程逻辑/////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////瓶子部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////瓶子部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////瓶子部分功能////////////////////////////////////////////////////////////////////////////
 
 //
 //	瓶子开门事件对应功能流程
@@ -275,6 +277,8 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 }
 
 //////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
 
 //
 //	金属开门事件对应功能流程
@@ -305,30 +309,239 @@ void metal_opendoor(enum enum_event* e_flag,unsigned char* buff)
 	}
 }
 
+//
+//	金属放入事件对应功能流程
+//
+unsigned char metal_put_flag = 0;
+void metal_put(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(metal_put_flag)
+	{
+		if(device_status_get(metal_sensor) == on)	//检查光电1状态
+		{
+			metal_put_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,metal_addr,0xb9,0x00,0x00);	//发送刷新消息
+			//*e_flag = event_bottle_scanfcode;	//切换事件到扫码
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			metal_put_flag = 0;
+			timeout_end();
+			*e_flag = event_metal_closedoor;	//切换事件到关门
+		}
+	}
+	else
+	{
+		metal_put_flag = 1;
+		timeout_start(BOTTLE_PUT_DELAY);	//开启超时
+	}
+}
 
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
-///////////////////////////以下为结构框架,无需关注/////////////////////////////////////////////////////////////////////////////////////
+//
+//	金属关门事件对应功能流程
+//
+unsigned char metal_closedoor_flag = 0;
+void metal_closedoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(metal_closedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())	//检查超时状态
+		{
+			metal_closedoor_flag = 0;
+			motor_ctrl(metal_motor,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,metal_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		metal_closedoor_flag = 1;
+		usart_ack(usart_Buff_Send,metal_addr,0xb3,0x00,0x00);	//发送响应
+		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
+		motor_ctrl(metal_motor,run_f);	//关门--反转
+	}
+}
+
+//
+//	金属称重事件对应功能流程
+//
+void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
+{
+	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
+	unsigned short weight = 0;
+	weight = get_weight();
+	s_buff[3] = metal_addr;
+	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
+	s_buff[8] = (unsigned char)weight>>8;
+	s_buff[9] = (unsigned char)(weight&0x00ff);
+
+	unsigned short crc_result = crc(&s_buff[2],8);
+	s_buff[10] = (unsigned char)crc_result>>8;
+	s_buff[11] = (unsigned char)(crc_result&0x00ff);
+	usart_send(USART_M,s_buff,12);
+}
+
+//////////////////////////////////////////////纸类部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////纸类部分功能////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////纸类部分功能////////////////////////////////////////////////////////////////////////////
+
+//
+//	纸类开门事件对应功能流程
+//	e_flag : 当前事件
+//	c_flag : 当前代码
+//
+unsigned char paper_open_door_flag = 0;
+void paper_opendoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(paper_open_door_flag)	//非首次进入
+	{
+		if(timeout_status_get())	//检查超时状态
+		{
+			//已超时
+			paper_open_door_flag = 0;
+			motor_ctrl(paper_motor,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,paper_addr,0xb2,0x00,0x00);	//发送失败消息
+			*e_flag = event_metal_put;	//切换事件到put
+		}
+	}
+	else	//首次进入
+	{
+		paper_open_door_flag = 1;
+		usart_ack(usart_Buff_Send,paper_addr,0xb1,0x00,0x00);	//发送响应
+		timeout_start(OPEN_DOOR_DELAY);	//开启超时
+		motor_ctrl(paper_motor,run_z);	//开门--正转
+	}
+}
+
+//
+//	纸类放入事件对应功能流程
+//
+unsigned char paper_put_flag = 0;
+void paper_put(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(paper_put_flag)
+	{
+		if(device_status_get(paper_sensor) == on)	//检查光电1状态
+		{
+			paper_put_flag = 0;
+			timeout_end();
+			usart_ack(usart_Buff_Send,paper_addr,0xb9,0x00,0x00);	//发送刷新消息
+			//*e_flag = event_bottle_scanfcode;	//切换事件到扫码
+		}
+		else if(timeout_status_get())	//检查超时状态
+		{
+			paper_put_flag = 0;
+			timeout_end();
+			*e_flag = event_paper_closedoor;	//切换事件到关门
+		}
+	}
+	else
+	{
+		paper_put_flag = 1;
+		timeout_start(BOTTLE_PUT_DELAY);	//开启超时
+	}
+}
+
+//
+//	纸类关门事件对应功能流程
+//
+unsigned char paper_closedoor_flag = 0;
+void paper_closedoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(paper_closedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())	//检查超时状态
+		{
+			paper_closedoor_flag = 0;
+			motor_ctrl(paper_motor,run_s);	//停止转动
+			timeout_end();
+			usart_ack(usart_Buff_Send,paper_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		paper_closedoor_flag = 1;
+		usart_ack(usart_Buff_Send,paper_addr,0xb3,0x00,0x00);	//发送响应
+		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
+		motor_ctrl(paper_motor,run_f);	//关门--反转
+	}
+}
+
+//
+//	纸类称重事件对应功能流程
+//
+void paper_weigh(enum enum_event* e_flag,unsigned char* buff)
+{
+	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
+	unsigned short weight = 0;
+	weight = get_weight();
+	s_buff[3] = paper_addr;
+	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
+	s_buff[8] = (unsigned char)weight>>8;
+	s_buff[9] = (unsigned char)(weight&0x00ff);
+
+	unsigned short crc_result = crc(&s_buff[2],8);
+	s_buff[10] = (unsigned char)crc_result>>8;
+	s_buff[11] = (unsigned char)(crc_result&0x00ff);
+	usart_send(USART_M,s_buff,12);
+}
+
+
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
 
 //
 //	事件选择函数		////////考虑事件切换时是否初始化设备状态,避免在一个事件未结束前 代码强行切换事件,导致上一个事件中启动的设备依旧运行 造成异常////////////////
 //	e_flag : 事件
 //	buff : 存储了数据包中的 目标地址、操作码、数据0、数据1 的缓冲区
 //
-unsigned char old_code = 0x00;	//用于记录上次触发事件的code,避免同一个code重复触发事件
+unsigned char old_code_bottle = 0x00;	//用于记录上次触发事件的code,避免同一个code重复触发事件
 void event_select_bottle(enum enum_event* e_flag,unsigned char* buff)
 {
-	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code)	//code 变更
+	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code_bottle)	//code 变更
 	{
-		old_code = buff[REC_BUFF_INDEX_CODE];
+		old_code_bottle = buff[REC_BUFF_INDEX_CODE];
 		switch(buff[REC_BUFF_INDEX_CODE])
 		{
 			case 0xb1: clear_flag(buff); *e_flag = event_bottle_opendoor; break;	//开门事件
 			case 0xb3: clear_flag(buff); *e_flag = event_bottle_closedoor; break;	//关门事件
 			case 0xc1: clear_flag(buff); *e_flag = event_bottle_recycle; break;	//强制回收事件
+		}
+	}
+}
+unsigned char old_code_metal = 0x00;
+void event_select_metal(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code_metal)	//code 变更
+	{
+		old_code_metal = buff[REC_BUFF_INDEX_CODE];
+		switch(buff[REC_BUFF_INDEX_CODE])
+		{
+			case 0xb1: clear_flag(buff); *e_flag = event_metal_opendoor; break;	//开门事件
+			case 0xb3: clear_flag(buff); *e_flag = event_metal_closedoor; break;	//关门事件
+			case 0xc3: clear_flag(buff); *e_flag = event_metal_weigh; break;	//称重事件
+		}
+	}
+}
+unsigned char old_code_paper = 0x00;
+void event_select_paper(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(buff[REC_BUFF_INDEX_CODE] != 0x00 && buff[REC_BUFF_INDEX_CODE] != old_code_paper)	//code 变更
+	{
+		old_code_paper = buff[REC_BUFF_INDEX_CODE];
+		switch(buff[REC_BUFF_INDEX_CODE])
+		{
+			case 0xb1: clear_flag(buff); *e_flag = event_paper_opendoor; break;	//开门事件
+			case 0xb3: clear_flag(buff); *e_flag = event_paper_closedoor; break;	//关门事件
+			case 0xc3: clear_flag(buff); *e_flag = event_paper_weigh; break;	//称重事件
 		}
 	}
 }
@@ -342,6 +555,7 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 {
 	switch(*e_flag)
 	{
+		//瓶子
 		case event_bottle_opendoor: bottle_opendoor(e_flag,buff); break;
 		case event_bottle_put: bottle_put(e_flag,buff); break;
 		case event_bottle_scanfcode: bottle_scanfcode(e_flag,buff); break;
@@ -349,7 +563,36 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 		case event_bottle_recycle: bottle_recycle(e_flag,buff); break;
 		case event_bottle_fail: bottle_fail(e_flag,buff); break;
 		case event_bottle_closedoor: bottle_closedoor(e_flag,buff); break;
-		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; old_code = 0x00; break;
+		//金属
+		case event_metal_opendoor: metal_opendoor(e_flag,buff); break;
+		case event_metal_put: metal_put(e_flag,buff); break;
+		case event_metal_closedoor: metal_closedoor(e_flag,buff); break;
+		case event_metal_weigh: metal_weigh(e_flag,buff); break;
+		//纸类
+		case event_paper_opendoor: paper_opendoor(e_flag,buff); break;
+		case event_paper_put: paper_put(e_flag,buff); break;
+		case event_paper_closedoor: paper_closedoor(e_flag,buff); break;
+		case event_paper_weigh: paper_weigh(e_flag,buff); break;
+		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; old_code_bottle = 0x00; 
+						 old_code_metal = 0x00; old_code_paper = 0x00; break;
+	}
+}
+
+enum enum_event run_event = event_none;	//程序当前运行的事件,所有部分共用该事件变量,如此则可以在事件选择部分做地址意外切换导致的事件强行变更问题
+//
+//
+//
+void function(unsigned char* buff)
+{
+	switch(buff[REC_BUFF_INDEX_ADDR])
+	{
+		#ifdef BOTTLE
+			case 0xA2: event_select_bottle(&run_event,buff); event_exe(&run_event,buff); break;
+		#endif
+		#ifdef METAL_PAPER
+			case 0xA3: event_select_metal(&run_event,buff); event_exe(&run_event,buff); break;
+			case 0xA4: event_select_paper(&run_event,buff); event_exe(&run_event,buff); break;
+		#endif
 	}
 }
 
@@ -367,6 +610,14 @@ void clear_flag(unsigned char* buff)
 	bottle_recycle_flag = 0;
 	bottle_fail_flag = 0;
 	bottle_closedoor_flag = 0;
+
+	metal_open_door_flag = 0;
+	metal_put_flag = 0;
+	metal_closedoor_flag = 0;
+
+	paper_open_door_flag = 0;
+	paper_put_flag = 0;
+	paper_closedoor_flag = 0;
 }
 
 //
@@ -398,40 +649,6 @@ unsigned char optin_code_get(unsigned char code)
 	}
 }
 
-enum enum_event run_event = event_none;	//程序当前运行的事件,所有部分共用该事件变量,如此则可以在事件选择部分做地址意外切换导致的事件强行变更问题
-
-//
-//
-//
-void function(unsigned char* buff)
-{
-	switch(buff[REC_BUFF_INDEX_ADDR])
-	{
-		#ifdef BOTTLE
-			case 0xA2: event_select_bottle(&run_event,buff); event_exe(&run_event,buff); break;
-		#endif
-		#ifdef METAL_PAPER
-			case 0xA3: break;
-			case 0xA4: break;
-		#endif
-	}
-}
-
-//
-//	初始化函数
-//
-void function_init(void)
-{
-	driver_init();
-}
-
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
-
 //
 //	往串口发送消息
 //	buff : 发送缓冲区
@@ -454,6 +671,21 @@ void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,uns
 	buff[8] = crc_result>>8;
 	buff[9] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,buff,10);
+}
+
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////以下为基础功能实现,无需关注/////////////////////////////////////////////////////////////////////////////////////
+
+//
+//	初始化函数
+//
+void function_init(void)
+{
+	driver_init();
 }
 
 //
