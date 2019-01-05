@@ -144,33 +144,46 @@ void motor_pd_ctrl(enum enum_status mrun)
 unsigned int get_weight(void)
 {
 	unsigned long adc = 0;
-	HX711_CK_OUT(0);
-	while(HX711_DO_GET);
-	for(unsigned char i = 0;i < 24;i++)
+	unsigned long sum = 0;
+
+	for(int i = 0;i < 5;i++)
 	{
-		HX711_CK_OUT(1);
-		adc <<= 1;
-		if(HX711_DO_GET) adc++;
 		HX711_CK_OUT(0);
+		while(HX711_DO_GET);
+		for(unsigned char i = 0;i < 24;i++)
+		{
+			HX711_CK_OUT(1);
+			adc <<= 1;
+			if(HX711_DO_GET) adc++;
+			HX711_CK_OUT(0);
+		}
+		HX711_CK_OUT(1);
+		adc = adc^0x800000;
+		HX711_CK_OUT(0);
+		sum += (3.3/16777216)*adc*1000;
+		adc = 0;
 	}
-	HX711_CK_OUT(1);
-	adc = adc^0x800000;
-	HX711_CK_OUT(0);
-	adc = (3.3/16777216)*adc*1000;
-	unsigned char num[10] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
-	num[0] = adc/1000 + '0';
-	num[2] = (adc/100)%10 + '0';
-	num[3] = (adc/10)%10 + '0';
-	num[4] = adc%10 + '0';
+	sum /= 5;
+	//sum *= 34.5;
+	/*
+	unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
+	num[0] = sum/1000 + '0';
+	num[2] = (sum/100)%10 + '0';
+	num[3] = (sum/10)%10 + '0';
+	num[4] = (sum/1)%10 + '0';
+	//num[5] = (sum)%10 + '0';
 	usart_send_str(USART_M,"now voltage: ");
 	usart_send_str(USART_M,num);
-	/*unsigned char d1 = adc>>16;
+	*/
+	/*
+	unsigned char d1 = adc>>16;
 	unsigned char d2 = (adc>>8)&0x00ff;
 	unsigned char d3 = adc&0x0000ff;
 	usart_send(USART_M,&d1,1);
 	usart_send(USART_M,&d2,1);
-	usart_send(USART_M,&d3,1);*/
-	return 0;
+	usart_send(USART_M,&d3,1);
+	*/
+	return sum;
 }
 
 ///////////////////////////以下为 STM32 功能初始化部分/////////////////////////////////////////////////////////////////////////////////////
@@ -190,8 +203,30 @@ void driver_init(void)
 	exti_init();
 	systick_init();
 	motor_init();
-	//tim_init();	弃用
+	tim_init();
 	hx711_init();
+	
+	
+//	unsigned long weight = 0;
+//	unsigned long weight_base = 0;
+//	get_weight();
+//	get_weight();
+//	weight_base = get_weight();
+
+	/*while(1)
+	{
+		get_weight();// - weight_base;
+		//weight *= 31.6667;
+		
+		unsigned char num[8] = {'0','0','0',' ','g','\r','\n','\0'};
+		num[0] = (weight/100)%10 + '0';
+		num[1] = (weight/10)%10 + '0';
+		num[2] = (weight)%10 + '0';
+		usart_send_str(USART_M,"Weight: ");
+		usart_send_str(USART_M,num);
+		
+	}*/
+	
 }
 
 //
@@ -224,12 +259,20 @@ void motor_init(void)
 	GPIO_InitStructure.GPIO_Pin = MOTOR_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(MOTOR_GPIO,&GPIO_InitStructure);
-	//皮带电机 弃用
+	//皮带电机调速
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_InitStructure.GPIO_Pin = MOTOR_PD_PIN;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(MOTOR_PD_GPIO,&GPIO_InitStructure);
 
 	MOTOR_METAL_OUT1(LOW);	//停止
 	MOTOR_METAL_OUT2(LOW);
+	MOTOR_PAPER_OUT1(LOW);
+	MOTOR_PAPER_OUT2(LOW);
+	MOTOR_BOTTLE_K_OUT1(LOW);
+	MOTOR_BOTTLE_K_OUT2(LOW);
+	MOTOR_BOTTLE_P_OUT1(LOW);
+	MOTOR_BOTTLE_P_OUT2(LOW);
 }
 
 //
@@ -255,29 +298,49 @@ void led_init(void)
 }
 
 //
-//	初始化定时器2(用于步进电机的驱动)
+//	初始化定时器TIM3(用于PWM调速)
 //
 void tim_init(void)
 {
+	GPIO_InitTypeDef GPIO_InitStructure;
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+	TIM_OCInitTypeDef  TIM_OCInitStructure;
 	NVIC_InitTypeDef NVIC_InitStructure;
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
-	TIM_TimeBaseStructure.TIM_Period = 12;
-	TIM_TimeBaseStructure.TIM_Prescaler =7199;
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+ 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC|RCC_APB2Periph_AFIO, ENABLE);
+
+	GPIO_PinRemapConfig(GPIO_FullRemap_TIM3, ENABLE);	//完全映射到PC7
+
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	TIM_TimeBaseStructure.TIM_Period = 3599;	//72000000/3600=20Khz
+	TIM_TimeBaseStructure.TIM_Prescaler = 0;	//不分频
 	TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
 	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;	//向上计数模式
-	TIM_TimeBaseInit(TIM2, &TIM_TimeBaseStructure);
+	TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
-	TIM_ITConfig(TIM2,TIM_IT_Update,ENABLE );
+	TIM_ITConfig(TIM3,TIM_IT_Update,ENABLE);
 
-	NVIC_InitStructure.NVIC_IRQChannel = TIM2_IRQn;
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM2;
+ 	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	TIM_OC2Init(TIM3, &TIM_OCInitStructure);
+
+	TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
+
+	NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
 	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 6;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 
-	TIM_Cmd(TIM2, ENABLE);
+	TIM_Cmd(TIM3, ENABLE);
+
+	TIM_SetCompare2(TIM3,2250);	//IO输出1.23V，驱动板输出4.00V
 }
 
 //
@@ -386,14 +449,26 @@ void exti_init(void)
 ///////////////////////////以下为中断函数处理部分/////////////////////////////////////////////////////////////////////////////////////
 
 //
-//	定时器使用该中断函数
+//	定时器TIM2中断函数
 //
+unsigned int tm2count = 0;
 void TIM2_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM2,TIM_IT_Update) != RESET)
 	{
 		//motor_pd_ctrl(motor_pd_mode);
 		TIM_ClearITPendingBit(TIM2,TIM_IT_Update);
+	}
+}
+//
+//	定时器TIM3中断函数	用于PWM
+//
+void TIM3_IRQHandler(void)
+{
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET)
+	{
+		MOTOR_BOTTLE_P_SPEED_REVERSE;
+		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 	}
 }
 

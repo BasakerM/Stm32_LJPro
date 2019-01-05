@@ -173,7 +173,7 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_recycle_flag = 0;
 			timeout_end();
-			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
+			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--停止
 			if(buff[REC_BUFF_INDEX_CODE] == 0xc1)
 			{
 				usart_ack(usart_Buff_Send,bottle_addr,0xc2,0xff,0xff);	//强制回收情况下的成功消息
@@ -190,7 +190,7 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 		{
 			bottle_recycle_flag = 0;
 			timeout_end();
-			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--正转
+			motor_ctrl(bottle_motor_recycle,run_s);	//送入扫码--停止
 			if(buff[REC_BUFF_INDEX_CODE] == 0xc1)
 			{
 				usart_ack(usart_Buff_Send,bottle_addr,0xc2,0x00,0x00);	//强制回收情况下的失败消息
@@ -296,15 +296,15 @@ void metal_opendoor(enum enum_event* e_flag,unsigned char* buff)
 			metal_open_door_flag = 0;
 			motor_ctrl(metal_motor,run_s);	//停止转动
 			timeout_end();
-			usart_ack(usart_Buff_Send,metal_addr,0xb2,0x00,0x00);	//发送失败消息
+			usart_ack(usart_Buff_Send,metal_addr,0xb2,0xff,0xff);	//发送失败消息
 			*e_flag = event_metal_put;	//切换事件到put
 		}
 	}
 	else	//首次进入
 	{
 		metal_open_door_flag = 1;
-		usart_ack(usart_Buff_Send,metal_addr,0xb1,0x00,0x00);	//发送响应
-		timeout_start(OPEN_DOOR_DELAY);	//开启超时
+		usart_ack(usart_Buff_Send,metal_addr,0xb1,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		timeout_start(METAL_OPEN_DOOR_DELAY);	//开启超时
 		motor_ctrl(metal_motor,run_z);	//开门--正转
 	}
 }
@@ -317,14 +317,27 @@ void metal_put(enum enum_event* e_flag,unsigned char* buff)
 {
 	if(metal_put_flag)
 	{
-		if(device_status_get(metal_sensor) == on)	//检查光电1状态
+		if(device_status_get(metal_sensor) == on && metal_put_flag == 1)	//检查光电1状态
 		{
-			metal_put_flag = 0;
-			timeout_end();
+			metal_put_flag = 2;
+			timeout_start(2);	//开启超时
 			usart_ack(usart_Buff_Send,metal_addr,0xb9,0x00,0x00);	//发送刷新消息
 			//*e_flag = event_bottle_scanfcode;	//切换事件到扫码
 		}
-		else if(timeout_status_get())	//检查超时状态
+		else if(timeout_status_get() && metal_put_flag == 2)
+		{
+			if(device_status_get(metal_sensor) == off)
+			{
+				metal_put_flag = 1;
+				timeout_start(METAL_PUT_DELAY);	//开启超时
+			}
+			else
+			{
+				timeout_start(2);	//开启超时
+				usart_ack(usart_Buff_Send,metal_addr,0xb9,0x00,0x00);	//发送刷新消息
+			}
+		}
+		else if(timeout_status_get() && metal_put_flag == 1)	//检查超时状态
 		{
 			metal_put_flag = 0;
 			timeout_end();
@@ -334,7 +347,7 @@ void metal_put(enum enum_event* e_flag,unsigned char* buff)
 	else
 	{
 		metal_put_flag = 1;
-		timeout_start(BOTTLE_PUT_DELAY);	//开启超时
+		timeout_start(METAL_PUT_DELAY);	//开启超时
 	}
 }
 
@@ -351,15 +364,15 @@ void metal_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			metal_closedoor_flag = 0;
 			motor_ctrl(metal_motor,run_s);	//停止转动
 			timeout_end();
-			usart_ack(usart_Buff_Send,metal_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
+			usart_ack(usart_Buff_Send,metal_addr,0xb4,0xDD,0xDD);	//发送成功消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
 	}
 	else	//首次进入
 	{
 		metal_closedoor_flag = 1;
-		usart_ack(usart_Buff_Send,metal_addr,0xb3,0x00,0x00);	//发送响应
-		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
+		usart_ack(usart_Buff_Send,metal_addr,0xb3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		timeout_start(METAL_CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(metal_motor,run_f);	//关门--反转
 	}
 }
@@ -367,20 +380,38 @@ void metal_closedoor(enum enum_event* e_flag,unsigned char* buff)
 //
 //	金属称重事件对应功能流程
 //
+unsigned long weight_base = 0;
 void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 {
 	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
-	unsigned short weight = 0;
-	weight = get_weight();
+	unsigned long weight = 0;
+	usart_ack(usart_Buff_Send,metal_addr,0xC3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+
+	timeout_start(1);	//开启超时
+	while(!timeout_status_get());
+	timeout_end();
+
 	s_buff[3] = metal_addr;
 	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
-	s_buff[8] = (unsigned char)weight>>8;
-	s_buff[9] = (unsigned char)(weight&0x00ff);
+	if(buff[REC_BUFF_INDEX_DAT1])	//关门后的称重
+	{
+		weight = get_weight() - weight_base;
+		weight *= 41;
+		s_buff[8] = (unsigned char)weight>>8;
+		s_buff[9] = (unsigned char)(weight&0x00ff);
+	}
+	else	//开门前的称重
+	{
+		weight_base = get_weight();	//获取开门前的基准重量
+		s_buff[8] = 0x00;	//(unsigned char)weight>>8;
+		s_buff[9] = 0x00;	//(unsigned char)(weight&0x00ff);
+	}
 
 	unsigned short crc_result = crc(&s_buff[2],8);
-	s_buff[10] = (unsigned char)crc_result>>8;
+	s_buff[10] = (unsigned char)(crc_result>>8);
 	s_buff[11] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,s_buff,12);
+	*e_flag = event_none;	//切换事件到none
 }
 
 //////////////////////////////////////////////纸类部分功能////////////////////////////////////////////////////////////////////////////
@@ -481,13 +512,22 @@ void paper_weigh(enum enum_event* e_flag,unsigned char* buff)
 	weight = get_weight();
 	s_buff[3] = paper_addr;
 	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
-	s_buff[8] = (unsigned char)weight>>8;
-	s_buff[9] = (unsigned char)(weight&0x00ff);
+	if(buff[REC_BUFF_INDEX_DAT1])	//开门前的称重
+	{
+		s_buff[8] = 0x00;	//(unsigned char)weight>>8;
+		s_buff[9] = 0x10;	//(unsigned char)(weight&0x00ff);
+	}
+	else	//关门后的称重
+	{
+		s_buff[8] = 0x00;	//(unsigned char)weight>>8;
+		s_buff[9] = 0x00;	//(unsigned char)(weight&0x00ff);
+	}
 
 	unsigned short crc_result = crc(&s_buff[2],8);
 	s_buff[10] = (unsigned char)crc_result>>8;
 	s_buff[11] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,s_buff,12);
+	*e_flag = event_none;	//切换事件到none
 }
 
 
@@ -645,6 +685,7 @@ unsigned char optin_code_get(unsigned char code)
 		case 0xBE: return 0xBE;
 		case 0xBF: return 0xBF;
 		case 0xC1: return 0xC1;
+		case 0xC3: return 0xC3;
 		default: return 0x00;
 	}
 }

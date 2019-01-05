@@ -54,7 +54,7 @@ void exti_init(void);
 #define LED_PIN_A GPIO_Pin_5	//板载D4
 #define LED_GPIO_B GPIOE
 #define LED_PIN_B GPIO_Pin_5	//板载D2
-//电机(开门,金属,纸类)
+//电机控制信号(开门,金属,纸类，皮带)
 #define MOTOR_RCC RCC_APB2Periph_GPIOG
 #define MOTOR_GPIO GPIOG
 #define MOTOR_PIN GPIO_Pin_All
@@ -67,10 +67,10 @@ void exti_init(void);
 #define MOTOR_BOTTLE_P_PIN_OUT1 GPIO_Pin_6//瓶子皮带引脚
 #define MOTOR_BOTTLE_P_PIN_OUT2 GPIO_Pin_7
 
-//皮带电机	弃用
-#define MOTOR_PD_RCC RCC_APB2Periph_GPIOF
-#define MOTOR_PD_GPIO GPIOF
-#define MOTOR_PD_PIN GPIO_Pin_All
+//电机调速信号(皮带)
+#define MOTOR_PD_RCC RCC_APB2Periph_GPIOC
+#define MOTOR_PD_GPIO GPIOC
+#define MOTOR_PD_PIN GPIO_Pin_7
 
 //HX711
 #define HX711_RCC RCC_APB2Periph_GPIOE
@@ -92,8 +92,9 @@ void exti_init(void);
 #define MOTOR_BOTTLE_K_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_RESET)
 #define MOTOR_BOTTLE_K_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_RESET)
 //瓶子皮带
-#define MOTOR_BOTTLE_P_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
-#define MOTOR_BOTTLE_P_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
+#define MOTOR_BOTTLE_P_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_RESET)
+#define MOTOR_BOTTLE_P_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
+#define MOTOR_BOTTLE_P_SPEED_REVERSE GPIO_WriteBit(MOTOR_PD_GPIO,MOTOR_PD_PIN,(BitAction)(1-GPIO_ReadOutputDataBit(MOTOR_PD_GPIO,MOTOR_PD_PIN)))
 //板载led
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
