@@ -49,6 +49,30 @@ void motor_ctrl(enum enum_device device,enum enum_status mrun)
 			*/
 		}
 	}
+	else if(device == bottle_lock)	//瓶子管理员门
+	{
+		switch(mrun)
+		{
+			case open: LOCK_BOTTLE_OUT(LOW); break;	//开门
+			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+		}
+	}
+	else if(device == metal_lock)	//金属管理员门
+	{
+		switch(mrun)
+		{
+			case open: LOCK_METAL_OUT(LOW); break;	//开门
+			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+		}
+	}
+	else if(device == paper_lock)	//纸类管理员门
+	{
+		switch(mrun)
+		{
+			case open: LOCK_PAPER_OUT(LOW); break;	//开门
+			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+		}
+	}
 }
 
 enum enum_status exti_line0 = off;	//金属光电
@@ -111,6 +135,24 @@ enum enum_status device_status_get(enum enum_device d_flag)
 		//纸类光电////////////////////////////////
 		case paper_sensor:
 			if(exti_line1 == on)
+				return on;
+			else
+				return off;
+		//瓶子限位器--管理员门////////////////////////////////
+		case bottle_lock:
+			if(exti_line11 == on)
+				return on;
+			else
+				return off;
+		//金属限位器--管理员门////////////////////////////////
+		case metal_lock:
+			if(exti_line12 == on)
+				return on;
+			else
+				return off;
+		//纸类限位器--管理员门////////////////////////////////
+		case paper_lock:
+			if(exti_line13 == on)
 				return on;
 			else
 				return off;

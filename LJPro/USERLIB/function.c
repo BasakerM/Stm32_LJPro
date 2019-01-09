@@ -276,6 +276,56 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 	}
 }
 
+//
+//	瓶子管理员门开门事件
+//
+unsigned char bottle_openmanagedoor_flag = 0;
+void bottle_manage_opendoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(bottle_openmanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			bottle_openmanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,bottle_addr,0xb6,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		bottle_openmanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,bottle_addr,0xb5,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(bottle_lock,open);	//开管理员门
+		timeout_start(1);	//开启超时
+	}
+}
+
+//
+//	瓶子管理员门关门事件
+//
+unsigned char bottle_closemanagedoor_flag = 0;
+void bottle_manage_closedoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(bottle_closemanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			bottle_closemanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,bottle_addr,0xb8,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		bottle_closemanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,bottle_addr,0xb7,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(bottle_lock,close);	//关管理员门
+		timeout_start(1);	//开启超时
+	}
+}
+
 //////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////金属部分功能////////////////////////////////////////////////////////////////////////////
@@ -386,13 +436,31 @@ void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
 	unsigned long weight = 0;
 	usart_ack(usart_Buff_Send,metal_addr,0xC3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
-
-	timeout_start(1);	//开启超时
-	while(!timeout_status_get());
-	timeout_end();
-
 	s_buff[3] = metal_addr;
 	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
+
+	unsigned char times_flag = 0;
+	timeout_start(1);	//开启超时
+	while(!timeout_status_get())	//等待超时
+	{
+		if(times_flag == 0)
+		{
+			times_flag++;
+			if((weight = get_weight()) < 0)	//称重失败
+			{
+				s_buff[8] = 0xff;
+				s_buff[9] = 0xff;
+				unsigned short crc_result = crc(&s_buff[2],8);
+				s_buff[10] = (unsigned char)(crc_result>>8);
+				s_buff[11] = (unsigned char)(crc_result&0x00ff);
+				usart_send(USART_M,s_buff,12);	//发送失败消息
+				return;
+			}
+
+		}
+	}
+	timeout_end();
+
 	if(buff[REC_BUFF_INDEX_DAT1])	//关门后的称重
 	{
 		weight = get_weight() - weight_base;
@@ -412,6 +480,56 @@ void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 	s_buff[11] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,s_buff,12);
 	*e_flag = event_none;	//切换事件到none
+}
+
+//
+//	金属管理员门开门事件
+//
+unsigned char metal_openmanagedoor_flag = 0;
+void metal_manage_opendoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(metal_openmanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			metal_openmanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,metal_addr,0xb6,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		metal_openmanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,metal_addr,0xb5,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(metal_lock,open);	//开管理员门
+		timeout_start(1);	//开启超时
+	}
+}
+
+//
+//	金属管理员门关门事件
+//
+unsigned char metal_closemanagedoor_flag = 0;
+void metal_manage_closedoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(metal_closemanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			metal_closemanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,metal_addr,0xb8,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		metal_closemanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,metal_addr,0xb7,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(metal_lock,close);	//关管理员门
+		timeout_start(1);	//开启超时
+	}
 }
 
 //////////////////////////////////////////////纸类部分功能////////////////////////////////////////////////////////////////////////////
@@ -530,6 +648,56 @@ void paper_weigh(enum enum_event* e_flag,unsigned char* buff)
 	*e_flag = event_none;	//切换事件到none
 }
 
+//
+//	纸类管理员门开门事件
+//
+unsigned char paper_openmanagedoor_flag = 0;
+void paper_manage_opendoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(paper_openmanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			paper_openmanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,paper_addr,0xb6,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		paper_openmanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,paper_addr,0xb5,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(paper_lock,open);	//开管理员门
+		timeout_start(1);	//开启超时
+	}
+}
+
+//
+//	纸类管理员门关门事件
+//
+unsigned char paper_closemanagedoor_flag = 0;
+void paper_manage_closedoor(enum enum_event* e_flag,unsigned char* buff)
+{
+	if(paper_closemanagedoor_flag)	//非首次进入
+	{
+		if(timeout_status_get())
+		{
+			paper_closemanagedoor_flag = 0;
+			usart_ack(usart_Buff_Send,paper_addr,0xb8,0xff,0xff);	//发送成功消息
+			timeout_end();
+			*e_flag = event_none;	//切换事件到none
+		}
+	}
+	else	//首次进入
+	{
+		paper_closemanagedoor_flag = 1;
+		usart_ack(usart_Buff_Send,paper_addr,0xb7,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		motor_ctrl(paper_lock,close);	//关管理员门
+		timeout_start(1);	//开启超时
+	}
+}
+
 
 ///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////以下为结构框架/////////////////////////////////////////////////////////////////////////////////////
@@ -554,6 +722,8 @@ void event_select_bottle(enum enum_event* e_flag,unsigned char* buff)
 			case 0xb1: clear_flag(buff); *e_flag = event_bottle_opendoor; break;	//开门事件
 			case 0xb3: clear_flag(buff); *e_flag = event_bottle_closedoor; break;	//关门事件
 			case 0xc1: clear_flag(buff); *e_flag = event_bottle_recycle; break;	//强制回收事件
+			case 0xb5: clear_flag(buff); *e_flag = event_bottle_openmanagedoor; break;	//管理员开门事件
+			case 0xb7: clear_flag(buff); *e_flag = event_bottle_closemanagedoor; break;	//管理员关门事件
 		}
 	}
 }
@@ -568,6 +738,8 @@ void event_select_metal(enum enum_event* e_flag,unsigned char* buff)
 			case 0xb1: clear_flag(buff); *e_flag = event_metal_opendoor; break;	//开门事件
 			case 0xb3: clear_flag(buff); *e_flag = event_metal_closedoor; break;	//关门事件
 			case 0xc3: clear_flag(buff); *e_flag = event_metal_weigh; break;	//称重事件
+			case 0xb5: clear_flag(buff); *e_flag = event_metal_openmanagedoor; break;	//管理员开门事件
+			case 0xb7: clear_flag(buff); *e_flag = event_metal_closemanagedoor; break;	//管理员关门事件
 		}
 	}
 }
@@ -582,6 +754,8 @@ void event_select_paper(enum enum_event* e_flag,unsigned char* buff)
 			case 0xb1: clear_flag(buff); *e_flag = event_paper_opendoor; break;	//开门事件
 			case 0xb3: clear_flag(buff); *e_flag = event_paper_closedoor; break;	//关门事件
 			case 0xc3: clear_flag(buff); *e_flag = event_paper_weigh; break;	//称重事件
+			case 0xb5: clear_flag(buff); *e_flag = event_paper_openmanagedoor; break;	//管理员开门事件
+			case 0xb7: clear_flag(buff); *e_flag = event_paper_closemanagedoor; break;	//管理员关门事件
 		}
 	}
 }
@@ -603,16 +777,23 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 		case event_bottle_recycle: bottle_recycle(e_flag,buff); break;
 		case event_bottle_fail: bottle_fail(e_flag,buff); break;
 		case event_bottle_closedoor: bottle_closedoor(e_flag,buff); break;
+		case event_bottle_openmanagedoor: bottle_manage_opendoor(e_flag,buff); break;
+		case event_bottle_closemanagedoor: bottle_manage_closedoor(e_flag,buff); break;
 		//金属
 		case event_metal_opendoor: metal_opendoor(e_flag,buff); break;
 		case event_metal_put: metal_put(e_flag,buff); break;
 		case event_metal_closedoor: metal_closedoor(e_flag,buff); break;
 		case event_metal_weigh: metal_weigh(e_flag,buff); break;
+		case event_metal_openmanagedoor: metal_manage_opendoor(e_flag,buff); break;
+		case event_metal_closemanagedoor: metal_manage_closedoor(e_flag,buff); break;
 		//纸类
 		case event_paper_opendoor: paper_opendoor(e_flag,buff); break;
 		case event_paper_put: paper_put(e_flag,buff); break;
 		case event_paper_closedoor: paper_closedoor(e_flag,buff); break;
 		case event_paper_weigh: paper_weigh(e_flag,buff); break;
+		case event_paper_openmanagedoor: paper_manage_opendoor(e_flag,buff); break;
+		case event_paper_closemanagedoor: paper_manage_closedoor(e_flag,buff); break;
+		//
 		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; old_code_bottle = 0x00; 
 						 old_code_metal = 0x00; old_code_paper = 0x00; break;
 	}
