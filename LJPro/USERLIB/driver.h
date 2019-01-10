@@ -10,8 +10,11 @@ enum enum_event
 {
 	event_none = 0,event_bottle_opendoor = 1,event_bottle_closedoor = 2,
 	event_bottle_put = 3,event_bottle_scanfcode = 4,event_bottle_ack = 5,event_bottle_recycle = 6,event_bottle_fail = 7,
+	event_bottle_openmanagedoor = 18,event_bottle_closemanagedoor = 19,
 	event_metal_opendoor = 8,event_metal_closedoor = 9,event_metal_put = 10,event_metal_recycle = 11,event_metal_weigh = 12,
-	event_paper_opendoor = 13,event_paper_closedoor = 14,event_paper_put = 15,event_paper_recycle = 16,event_paper_weigh = 17
+	event_metal_openmanagedoor = 20,event_metal_closemanagedoor = 21,
+	event_paper_opendoor = 13,event_paper_closedoor = 14,event_paper_put = 15,event_paper_recycle = 16,event_paper_weigh = 17,
+	event_paper_openmanagedoor = 22,event_paper_closemanagedoor = 23
 };
 
 enum enum_device

@@ -53,24 +53,24 @@ void motor_ctrl(enum enum_device device,enum enum_status mrun)
 	{
 		switch(mrun)
 		{
-			case open: LOCK_BOTTLE_OUT(LOW); break;	//开门
-			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+			case open: LOCK_BOTTLE_OUT(HIGH); break;	//开门
+			case close: LOCK_BOTTLE_OUT(LOW); break;	//关门
 		}
 	}
 	else if(device == metal_lock)	//金属管理员门
 	{
 		switch(mrun)
 		{
-			case open: LOCK_METAL_OUT(LOW); break;	//开门
-			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+			case open: LOCK_METAL_OUT(HIGH); break;	//开门
+			case close: LOCK_BOTTLE_OUT(LOW); break;	//关门
 		}
 	}
 	else if(device == paper_lock)	//纸类管理员门
 	{
 		switch(mrun)
 		{
-			case open: LOCK_PAPER_OUT(LOW); break;	//开门
-			case close: LOCK_BOTTLE_OUT(HIGH); break;	//关门
+			case open: LOCK_PAPER_OUT(HIGH); break;	//开门
+			case close: LOCK_BOTTLE_OUT(LOW); break;	//关门
 		}
 	}
 }
