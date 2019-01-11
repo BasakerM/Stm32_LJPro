@@ -3,11 +3,11 @@
 <title>Static Call Graph - [.\LJPro.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\LJPro.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Thu Jan 10 17:19:27 2019
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060422: Last Updated: Fri Jan 11 18:22:26 2019
 <BR><P>
-<H3>Maximum Stack Usage =        152 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
+<H3>Maximum Stack Usage =        160 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
-__rt_entry_main &rArr; main &rArr; function &rArr; event_exe &rArr; metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+__rt_entry_main &rArr; main &rArr; function &rArr; event_exe &rArr; paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 <P>
 <H3>
 Functions with no stack information
@@ -211,8 +211,8 @@ Global Symbols
 <P><STRONG><a name="[e5]"></a>__rt_entry_postsh_1</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$00000009))
 
 <P><STRONG><a name="[54]"></a>__rt_entry_main</STRONG> (Thumb, 0 bytes, Stack size unknown bytes, __rtentry2.o(.ARM.Collect$$rtentry$$0000000D))
-<BR><BR>[Stack]<UL><LI>Max Depth = 152 + Unknown Stack Size
-<LI>Call Chain = __rt_entry_main &rArr; main &rArr; function &rArr; event_exe &rArr; metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<BR><BR>[Stack]<UL><LI>Max Depth = 160 + Unknown Stack Size
+<LI>Call Chain = __rt_entry_main &rArr; main &rArr; function &rArr; event_exe &rArr; paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[55]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[56]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;exit
@@ -901,7 +901,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[83]"></a>event_exe</STRONG> (Thumb, 272 bytes, Stack size 16 bytes, function.o(i.event_exe))
-<BR><BR>[Stack]<UL><LI>Max Depth = 144<LI>Call Chain = event_exe &rArr; metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = event_exe &rArr; paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_weigh
 <LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
@@ -965,7 +965,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[99]"></a>function</STRONG> (Thumb, 78 bytes, Stack size 8 bytes, function.o(i.function))
-<BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = function &rArr; event_exe &rArr; metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = function &rArr; event_exe &rArr; paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[93]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;event_select_paper
 <LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;event_select_metal
@@ -983,7 +983,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[55]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[9b]"></a>get_weight</STRONG> (Thumb, 196 bytes, Stack size 56 bytes, driver.o(i.get_weight))
+<P><STRONG><a name="[9b]"></a>get_weight</STRONG> (Thumb, 200 bytes, Stack size 56 bytes, driver.o(i.get_weight))
 <BR><BR>[Stack]<UL><LI>Max Depth = 88<LI>Call Chain = get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[60]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GPIO_WriteBit
@@ -1017,7 +1017,7 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[55]"></a>main</STRONG> (Thumb, 34 bytes, Stack size 0 bytes, main.o(i.main))
-<BR><BR>[Stack]<UL><LI>Max Depth = 152<LI>Call Chain = main &rArr; function &rArr; event_exe &rArr; metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<BR><BR>[Stack]<UL><LI>Max Depth = 160<LI>Call Chain = main &rArr; function &rArr; event_exe &rArr; paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;function_init
 <LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;function
@@ -1087,8 +1087,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;event_exe
 </UL>
 
-<P><STRONG><a name="[87]"></a>metal_weigh</STRONG> (Thumb, 194 bytes, Stack size 40 bytes, function.o(i.metal_weigh))
-<BR><BR>[Stack]<UL><LI>Max Depth = 128<LI>Call Chain = metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<P><STRONG><a name="[87]"></a>metal_weigh</STRONG> (Thumb, 248 bytes, Stack size 48 bytes, function.o(i.metal_weigh))
+<BR><BR>[Stack]<UL><LI>Max Depth = 136<LI>Call Chain = metal_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usart_send
 <LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;timeout_status_get
@@ -1196,11 +1196,15 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;event_exe
 </UL>
 
-<P><STRONG><a name="[8d]"></a>paper_weigh</STRONG> (Thumb, 106 bytes, Stack size 32 bytes, function.o(i.paper_weigh))
-<BR><BR>[Stack]<UL><LI>Max Depth = 120<LI>Call Chain = paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
+<P><STRONG><a name="[8d]"></a>paper_weigh</STRONG> (Thumb, 252 bytes, Stack size 48 bytes, function.o(i.paper_weigh))
+<BR><BR>[Stack]<UL><LI>Max Depth = 136<LI>Call Chain = paper_weigh &rArr; get_weight &rArr; __aeabi_dmul
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usart_send
+<LI><a href="#[6f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;timeout_status_get
+<LI><a href="#[70]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;timeout_start
+<LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;timeout_end
 <LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;get_weight
+<LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usart_ack
 <LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc
 </UL>
 <BR>[Called By]<UL><LI><a href="#[83]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;event_exe
@@ -1231,7 +1235,8 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[6e]"></a>timeout_end</STRONG> (Thumb, 24 bytes, Stack size 0 bytes, systick.o(i.timeout_end))
-<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
+<BR><BR>[Called By]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_weigh
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
 <LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_opendoor
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_opendoor
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_closedoor
@@ -1260,7 +1265,8 @@ Global Symbols
 <LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_fmul
 <LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_f2uiz
 </UL>
-<BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
+<BR>[Called By]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_weigh
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
 <LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_opendoor
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_opendoor
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_closedoor
@@ -1283,7 +1289,8 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[6f]"></a>timeout_status_get</STRONG> (Thumb, 30 bytes, Stack size 0 bytes, systick.o(i.timeout_status_get))
-<BR><BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
+<BR><BR>[Called By]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_weigh
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
 <LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_opendoor
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_opendoor
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_closedoor
@@ -1310,7 +1317,8 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[a3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;usart_send
 <LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;crc
 </UL>
-<BR>[Called By]<UL><LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
+<BR>[Called By]<UL><LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_weigh
+<LI><a href="#[8b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_put
 <LI><a href="#[8a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_opendoor
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_opendoor
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;paper_manage_closedoor

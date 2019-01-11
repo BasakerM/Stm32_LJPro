@@ -188,11 +188,11 @@ unsigned int get_weight(void)
 	unsigned long adc = 0;
 	unsigned long sum = 0;
 
-	for(int i = 0;i < 5;i++)
+	for(unsigned char i = 0;i < 5;i++)
 	{
 		HX711_CK_OUT(0);
 		while(HX711_DO_GET);
-		for(unsigned char i = 0;i < 24;i++)
+		for(unsigned char k = 0;k < 24;k++)
 		{
 			HX711_CK_OUT(1);
 			adc <<= 1;
@@ -206,25 +206,15 @@ unsigned int get_weight(void)
 		adc = 0;
 	}
 	sum /= 5;
-	//sum *= 34.5;
-	/*
-	unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
+	
+	/*unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
 	num[0] = sum/1000 + '0';
 	num[2] = (sum/100)%10 + '0';
 	num[3] = (sum/10)%10 + '0';
 	num[4] = (sum/1)%10 + '0';
-	//num[5] = (sum)%10 + '0';
 	usart_send_str(USART_M,"now voltage: ");
-	usart_send_str(USART_M,num);
-	*/
-	/*
-	unsigned char d1 = adc>>16;
-	unsigned char d2 = (adc>>8)&0x00ff;
-	unsigned char d3 = adc&0x0000ff;
-	usart_send(USART_M,&d1,1);
-	usart_send(USART_M,&d2,1);
-	usart_send(USART_M,&d3,1);
-	*/
+	usart_send_str(USART_M,num);*/
+
 	return sum;
 }
 
@@ -249,16 +239,17 @@ void driver_init(void)
 	hx711_init();
 	
 	
-//	unsigned long weight = 0;
-//	unsigned long weight_base = 0;
-//	get_weight();
-//	get_weight();
-//	weight_base = get_weight();
+	/*unsigned int weight = 0;
+	unsigned long weight_base = 0;
+	get_weight();
+	get_weight();
+	weight_base = get_weight();
 
-	/*while(1)
+	while(1)
 	{
-		get_weight();// - weight_base;
-		//weight *= 31.6667;
+		//get_weight();
+		weight = get_weight() - weight_base;
+		weight *= 31.6667;
 		
 		unsigned char num[8] = {'0','0','0',' ','g','\r','\n','\0'};
 		num[0] = (weight/100)%10 + '0';

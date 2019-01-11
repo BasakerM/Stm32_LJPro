@@ -78,11 +78,17 @@ void exti_init(void);
 #define MOTOR_PD_GPIO GPIOC
 #define MOTOR_PD_PIN GPIO_Pin_7
 
+//金属称重
+#define METAL_WEIGH_CK_PIN GPIO_Pin_0
+#define METAL_WEIGH_DO_PIN GPIO_Pin_1
+//纸类称重
+#define PAPER_WEIGH_CK_PIN GPIO_Pin_0
+#define PAPER_WEIGH_DO_PIN GPIO_Pin_1
 //HX711
-#define HX711_RCC RCC_APB2Periph_GPIOE
-#define HX711_GPIO GPIOE
-#define HX711_CK_PIN GPIO_Pin_0
-#define HX711_DO_PIN GPIO_Pin_1
+#define WEIGH_RCC RCC_APB2Periph_GPIOE
+#define WEIGH_GPIO GPIOE
+#define WEIGH_CK_PIN METAL_WEIGHT_CK_PIN|PAPER_WEIGHT_CK_PIN
+#define WEIGH_DO_PIN METAL_WEIGHT_DO_PIN|PAPER_WEIGHT_DO_PIN
 
 ////////////////////////////// IO 操作/////////////////////////////////
 //电平宏
@@ -111,8 +117,12 @@ void exti_init(void);
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
 //HX711
-#define HX711_CK_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
-#define HX711_DO_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
+//金属称重
+#define METAL_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
+#define METAL_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
+//纸类称重
+#define PAPER_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
+#define PAPER_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
 
 
 #endif

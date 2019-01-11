@@ -433,7 +433,7 @@ void metal_closedoor(enum enum_event* e_flag,unsigned char* buff)
 unsigned long weight_base = 0;
 void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 {
-	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
+	unsigned char s_buff[12] = {0x19,0x19,0x0A,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
 	unsigned long weight = 0;
 	usart_ack(usart_Buff_Send,metal_addr,0xC3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
 	s_buff[3] = metal_addr;
@@ -446,7 +446,7 @@ void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 		if(times_flag == 0)
 		{
 			times_flag++;
-			if((weight = get_weight()) < 0)	//称重失败
+			if((weight = get_weight()) == 0)	//称重失败
 			{
 				s_buff[8] = 0xff;
 				s_buff[9] = 0xff;
@@ -552,15 +552,15 @@ void paper_opendoor(enum enum_event* e_flag,unsigned char* buff)
 			paper_open_door_flag = 0;
 			motor_ctrl(paper_motor,run_s);	//停止转动
 			timeout_end();
-			usart_ack(usart_Buff_Send,paper_addr,0xb2,0x00,0x00);	//发送失败消息
+			usart_ack(usart_Buff_Send,paper_addr,0xb2,0xff,0xff);	//发送失败消息
 			*e_flag = event_metal_put;	//切换事件到put
 		}
 	}
 	else	//首次进入
 	{
 		paper_open_door_flag = 1;
-		usart_ack(usart_Buff_Send,paper_addr,0xb1,0x00,0x00);	//发送响应
-		timeout_start(OPEN_DOOR_DELAY);	//开启超时
+		usart_ack(usart_Buff_Send,paper_addr,0xb1,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		timeout_start(METAL_OPEN_DOOR_DELAY);	//开启超时
 		motor_ctrl(paper_motor,run_z);	//开门--正转
 	}
 }
@@ -607,15 +607,15 @@ void paper_closedoor(enum enum_event* e_flag,unsigned char* buff)
 			paper_closedoor_flag = 0;
 			motor_ctrl(paper_motor,run_s);	//停止转动
 			timeout_end();
-			usart_ack(usart_Buff_Send,paper_addr,0xb4,0x00,0x00);	//发送失败消息(正常回收情况下)
+			usart_ack(usart_Buff_Send,paper_addr,0xb4,0xDD,0xDD);	//发送失败消息(正常回收情况下)
 			*e_flag = event_none;	//切换事件到none
 		}
 	}
 	else	//首次进入
 	{
 		paper_closedoor_flag = 1;
-		usart_ack(usart_Buff_Send,paper_addr,0xb3,0x00,0x00);	//发送响应
-		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
+		usart_ack(usart_Buff_Send,paper_addr,0xb3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+		timeout_start(METAL_CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(paper_motor,run_f);	//关门--反转
 	}
 }
@@ -625,24 +625,50 @@ void paper_closedoor(enum enum_event* e_flag,unsigned char* buff)
 //
 void paper_weigh(enum enum_event* e_flag,unsigned char* buff)
 {
-	unsigned char s_buff[12] = {0x19,0x19,0x10,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
+	unsigned char s_buff[12] = {0x19,0x19,0x0A,0xA0,0xA1,0xC4,0x00,0x00,0x00,0x00,0x00,0x00};
 	unsigned short weight = 0;
-	weight = get_weight();
+	usart_ack(usart_Buff_Send,paper_addr,0xC3,0x00,buff[REC_BUFF_INDEX_DAT1]);	//发送响应
 	s_buff[3] = paper_addr;
 	s_buff[7] = buff[REC_BUFF_INDEX_DAT1];
-	if(buff[REC_BUFF_INDEX_DAT1])	//开门前的称重
+
+	unsigned char times_flag = 0;
+	timeout_start(1);	//开启超时
+	while(!timeout_status_get())	//等待超时
 	{
-		s_buff[8] = 0x00;	//(unsigned char)weight>>8;
-		s_buff[9] = 0x10;	//(unsigned char)(weight&0x00ff);
+		if(times_flag == 0)
+		{
+			times_flag++;
+			if((weight = get_weight()) == 0)	//称重失败
+			{
+				s_buff[8] = 0xff;
+				s_buff[9] = 0xff;
+				unsigned short crc_result = crc(&s_buff[2],8);
+				s_buff[10] = (unsigned char)(crc_result>>8);
+				s_buff[11] = (unsigned char)(crc_result&0x00ff);
+				usart_send(USART_M,s_buff,12);	//发送失败消息
+				return;
+			}
+
+		}
 	}
-	else	//关门后的称重
+	timeout_end();
+
+	if(buff[REC_BUFF_INDEX_DAT1])	//关门后的称重
 	{
+		weight = get_weight() - weight_base;
+		weight *= 41;
+		s_buff[8] = (unsigned char)weight>>8;
+		s_buff[9] = (unsigned char)(weight&0x00ff);
+	}
+	else	//开门前的称重
+	{
+		weight_base = get_weight();	//获取开门前的基准重量
 		s_buff[8] = 0x00;	//(unsigned char)weight>>8;
 		s_buff[9] = 0x00;	//(unsigned char)(weight&0x00ff);
 	}
 
 	unsigned short crc_result = crc(&s_buff[2],8);
-	s_buff[10] = (unsigned char)crc_result>>8;
+	s_buff[10] = (unsigned char)(crc_result>>8);
 	s_buff[11] = (unsigned char)(crc_result&0x00ff);
 	usart_send(USART_M,s_buff,12);
 	*e_flag = event_none;	//切换事件到none
