@@ -934,6 +934,37 @@ void usart_ack(unsigned char* buff,unsigned char a_flag,unsigned char c_flag,uns
 void function_init(void)
 {
 	driver_init();
+
+	
+	
+	/*unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
+	num[0] = sum/1000 + '0';
+	num[2] = (sum/100)%10 + '0';
+	num[3] = (sum/10)%10 + '0';
+	num[4] = (sum/1)%10 + '0';
+	usart_send_str(USART_M,"now voltage: ");
+	usart_send_str(USART_M,num);*/
+
+	/*unsigned int weight = 0;
+	unsigned long weight_base = 0;
+	get_weight();
+	get_weight();
+	weight_base = get_weight();
+
+	while(1)
+	{
+		//get_weight();
+		weight = get_weight() - weight_base;
+		weight *= 31.6667;
+		
+		unsigned char num[8] = {'0','0','0',' ','g','\r','\n','\0'};
+		num[0] = (weight/100)%10 + '0';
+		num[1] = (weight/10)%10 + '0';
+		num[2] = (weight)%10 + '0';
+		usart_send_str(USART_M,"Weight: ");
+		usart_send_str(USART_M,num);
+		
+	}*/
 }
 
 //

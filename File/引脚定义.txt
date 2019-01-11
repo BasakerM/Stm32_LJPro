@@ -1,0 +1,43 @@
+GPIO Define：
+
+motor : GPIOG
+	motor_A0 : PIN0 	----金属推杆电机输出1
+	motor_B0 : PIN1 	----金属推杆电机输出2
+	motor_A1 : PIN2 	----纸类推杆电机输出1
+	motor_B1 : PIN3 	----纸类推杆电机输出2
+	motor_A2 : PIN4 	----瓶子开门电机输出1
+	motor_B2 : PIN5 	----瓶子开门电机输出2
+	motor_A3 : PIN6 	----瓶子皮带电机输出1
+	motor_B3 : PIN7 	----瓶子皮带电机输出2
+
+relay : GPIOG
+	relay0 : PIN12 	----瓶子管理员门电控锁
+	relay1 : PIN13 	----金属管理员门电控锁
+	relay2 : PIN14 	----纸类管理员门电控锁
+
+signal sensor : GPIOD
+	signal_sensor0 : PIN0 	----金属光电传感器
+	signal_sensor1 : PIN1 	----纸类光电传感器
+	signal_sensor2 : PIN2 	----瓶子光电传感器1
+	signal_sensor3 : PIN3 	----瓶子光电传感器2
+	signal_sensor4 : PIN4 	----瓶子光电传感器3
+	signal_sensor5 : PIN5
+	signal_sensor6 : PIN6 	----瓶子限位器--开门
+	signal_sensor7 : PIN7 	----瓶子限位器--关门
+	signal_sensor8 : PIN8
+	signal_sensor9 : PIN9
+	signal_sensor10 : PIN10
+	signal_sensor11 : PIN11 	----瓶子限位器--管理员门
+	signal_sensor12 : PIN12 	----金属限位器--管理员门
+	signal_sensor13 : PIN13 	----纸类限位器--管理员门
+	signal_sensor14 : PIN14
+	signal_sensor15 : PIN15
+
+data sensor : GPIOF
+	data_sensor_set0 : PIN0 	----金属称重--时钟线
+	data_sensor_get0 : PIN1 	----金属称重--数据线
+	data_sensor_set1 : PIN2 	----纸类称重--时钟线
+	data_sensor_get1 : PIN3 	----纸类称重--数据线
+
+pwm : GPIOC
+	pwm_output0 : PIN7 	----瓶子皮带电机调速

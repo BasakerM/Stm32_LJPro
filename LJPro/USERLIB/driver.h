@@ -5,124 +5,178 @@
 #include "systick.h"
 #include "usart.h"
 
-//////////////////////////////枚举/////////////////////////////////
-enum enum_event
+//////////////////////////////enum//////////////////////////////////////////////////////////////////
+typedef enum
 {
-	event_none = 0,event_bottle_opendoor = 1,event_bottle_closedoor = 2,
-	event_bottle_put = 3,event_bottle_scanfcode = 4,event_bottle_ack = 5,event_bottle_recycle = 6,event_bottle_fail = 7,
-	event_bottle_openmanagedoor = 18,event_bottle_closemanagedoor = 19,
-	event_metal_opendoor = 8,event_metal_closedoor = 9,event_metal_put = 10,event_metal_recycle = 11,event_metal_weigh = 12,
-	event_metal_openmanagedoor = 20,event_metal_closemanagedoor = 21,
-	event_paper_opendoor = 13,event_paper_closedoor = 14,event_paper_put = 15,event_paper_recycle = 16,event_paper_weigh = 17,
-	event_paper_openmanagedoor = 22,event_paper_closemanagedoor = 23
-};
+	//motor
+	enum_ht_motor_0, enum_ht_motor_1, enum_ht_motor_2, enum_ht_motor_3,
+	//relay
+	enum_ht_realy_0, enum_ht_realy_1, enum_ht_realy_2,
+	//signal sensor
+	enum_ht_signal_sensor_0, enum_ht_signal_sensor_1, enum_ht_signal_sensor_2, enum_ht_signal_sensor_3,
+	enum_ht_signal_sensor_4, enum_ht_signal_sensor_5, enum_ht_signal_sensor_6, enum_ht_signal_sensor_7,
+	enum_ht_signal_sensor_8, enum_ht_signal_sensor_9, enum_ht_signal_sensor_10, enum_ht_signal_sensor_11,
+	enum_ht_signal_sensor_12, enum_ht_signal_sensor_13, enum_ht_signal_sensor_14, enum_ht_signal_sensor_15
+	//data sensor
+	enum_ht_data_sensor_0, enum_ht_data_sensor_1
+}enum_hardware_type;
 
-enum enum_device
+typedef enum
 {
-	bottle_motor_door = 0,bottle_motor_recycle = 1,bottle_lock = 2,
-	bottle_sensor_opendoor = 3,bottle_sensor_closedoor = 4,
-	bottle_sensor_one = 5,bottle_sensor_two = 6,bottle_sensor_three = 7,
-	metal_motor = 8,metal_lock = 9,metal_sensor = 10,
-	paper_motor = 11,paper_lock = 12,paper_sensor = 13
-};
+	enum_hs_none,
+	//motor status
+	enum_hs_forward, enum_hs_backward, enum_hs_stop,
+	//relay status
+	enum_hs_open, enum_hs_close,
+	//sensor status
+	enum_hs_on, enum_hs_off
+}enum_hardware_status;
 
-enum enum_status
-{
-	on = 0,off = 1,
-	open = 2,close = 3,
-	run_z = 4,run_f = 5,run_s = 6,
-	success = 7,fail = 8,exeing = 9
-};
 
-//////////////////////////////声明/////////////////////////////////
-void motor_ctrl(enum enum_device device,enum enum_status mrun);
-enum enum_status device_status_get(enum enum_device device);
-//void motor_pd_ctrl(enum enum_status mrun);
-unsigned int get_weight(void);
+//////////////////////////////declare//////////////////////////////////////////////////////////////////
+//////////////////////////////declare//////////////////////////////////////////////////////////////////
+//////////////////////////////declare//////////////////////////////////////////////////////////////////
+//////////////////////////////declare//////////////////////////////////////////////////////////////////
+//////////////////////////////declare//////////////////////////////////////////////////////////////////
+void hardware_control_status(enum_hardware_type ht,enum_hardware_status hs);
+enum_hardware_status hardware_get_status(enum_hardware_type ht);
+unsigned int get_voltage_value(enum_hardware_type ht);
 void driver_init(void);
-void hx711_init(void);
+void adc_init(void);
 void motor_init(void);
 void led_init(void);
-void tim_init(void);
+void pwm_init(void);
 void exti_init(void);
 
-//////////////////////////////定义/////////////////////////////////
-//中断
-#define INTERRUPT_RCC RCC_APB2Periph_GPIOD
-#define INTERRUPT_GPIO GPIOD
-#define INTERRUPT_PIN GPIO_Pin_All
-//板载led
-#define LED_RCC RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOE
-#define LED_GPIO_A GPIOB
-#define LED_PIN_A GPIO_Pin_5	//板载D4
-#define LED_GPIO_B GPIOE
-#define LED_PIN_B GPIO_Pin_5	//板载D2
-//电机控制信号(开门,金属,纸类，皮带)
+
+//////////////////////////////define//////////////////////////////////////////////////////////////////
+//////////////////////////////define//////////////////////////////////////////////////////////////////
+//////////////////////////////define//////////////////////////////////////////////////////////////////
+//////////////////////////////define//////////////////////////////////////////////////////////////////
+//////////////////////////////define//////////////////////////////////////////////////////////////////
+//motor
 #define MOTOR_RCC RCC_APB2Periph_GPIOG
 #define MOTOR_GPIO GPIOG
 #define MOTOR_PIN GPIO_Pin_All
-#define MOTOR_METAL_PIN_OUT1 GPIO_Pin_0//金属电机引脚
-#define MOTOR_METAL_PIN_OUT2 GPIO_Pin_1
-#define MOTOR_PAPER_PIN_OUT1 GPIO_Pin_2//纸类电机引脚
-#define MOTOR_PAPER_PIN_OUT2 GPIO_Pin_3
-#define MOTOR_BOTTLE_K_PIN_OUT1 GPIO_Pin_4//瓶子开门引脚
-#define MOTOR_BOTTLE_K_PIN_OUT2 GPIO_Pin_5
-#define MOTOR_BOTTLE_P_PIN_OUT1 GPIO_Pin_6//瓶子皮带引脚
-#define MOTOR_BOTTLE_P_PIN_OUT2 GPIO_Pin_7
-#define CLOCK_BOTTLE_PIN_OUT GPIO_Pin_12	//瓶子电控锁
-#define CLOCK_METAL_PIN_OUT GPIO_Pin_13	//金属电控锁
-#define CLOCK_PAPER_PIN_OUT GPIO_Pin_14	//纸类电控锁
 
-//电机调速信号(皮带)
-#define MOTOR_PD_RCC RCC_APB2Periph_GPIOC
-#define MOTOR_PD_GPIO GPIOC
-#define MOTOR_PD_PIN GPIO_Pin_7
+#define MOTOR_0_SET_A_PIN GPIO_Pin_0
+#define MOTOR_0_SET_B_PIN GPIO_Pin_1
+#define MOTOR_1_SET_A_PIN GPIO_Pin_2
+#define MOTOR_1_SET_B_PIN GPIO_Pin_3
+#define MOTOR_2_SET_A_PIN GPIO_Pin_4
+#define MOTOR_2_SET_B_PIN GPIO_Pin_5
+#define MOTOR_3_SET_A_PIN GPIO_Pin_6
+#define MOTOR_3_SET_B_PIN GPIO_Pin_7
+//relay
+#define RELAY_RCC RCC_APB2Periph_GPIOG
+#define RELAY_GPIO GPIOG
+#define RELAY_PIN GPIO_Pin_All
 
-//金属称重
-#define METAL_WEIGH_CK_PIN GPIO_Pin_0
-#define METAL_WEIGH_DO_PIN GPIO_Pin_1
-//纸类称重
-#define PAPER_WEIGH_CK_PIN GPIO_Pin_0
-#define PAPER_WEIGH_DO_PIN GPIO_Pin_1
-//HX711
-#define WEIGH_RCC RCC_APB2Periph_GPIOE
-#define WEIGH_GPIO GPIOE
-#define WEIGH_CK_PIN METAL_WEIGHT_CK_PIN|PAPER_WEIGHT_CK_PIN
-#define WEIGH_DO_PIN METAL_WEIGHT_DO_PIN|PAPER_WEIGHT_DO_PIN
+#define RELAY_0_SET_PIN GPIO_Pin_12
+#define RELAY_1_SET_PIN GPIO_Pin_13
+#define RELAY_2_SET_PIN GPIO_Pin_14
+//signal sensor
+#define SIGNAL_SENSOR_RCC RCC_APB2Periph_GPIOD
+#define SIGNAL_SENSOR_GPIO GPIOD
+#define SIGNAL_SENSOR_PIN GPIO_Pin_All
 
-////////////////////////////// IO 操作/////////////////////////////////
-//电平宏
-#define HIGH 1
-#define LOW 0
-//金属电机
-#define MOTOR_METAL_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_METAL_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_METAL_PIN_OUT1,Bit_RESET)
-#define MOTOR_METAL_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_METAL_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_METAL_PIN_OUT2,Bit_RESET)
-//纸类电机
-#define MOTOR_PAPER_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_PAPER_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_PAPER_PIN_OUT1,Bit_RESET)
-#define MOTOR_PAPER_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_PAPER_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_PAPER_PIN_OUT2,Bit_RESET)
-//瓶子开门
-#define MOTOR_BOTTLE_K_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT1,Bit_RESET)
-#define MOTOR_BOTTLE_K_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_K_PIN_OUT2,Bit_RESET)
-//瓶子皮带
-#define MOTOR_BOTTLE_P_OUT1(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT1,Bit_RESET)
-#define MOTOR_BOTTLE_P_OUT2(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_BOTTLE_P_PIN_OUT2,Bit_RESET)
-#define MOTOR_BOTTLE_P_SPEED_REVERSE GPIO_WriteBit(MOTOR_PD_GPIO,MOTOR_PD_PIN,(BitAction)(1-GPIO_ReadOutputDataBit(MOTOR_PD_GPIO,MOTOR_PD_PIN)))
-//瓶子电控锁
-#define LOCK_BOTTLE_OUT(a) if(a) GPIO_WriteBit(MOTOR_GPIO,CLOCK_BOTTLE_PIN_OUT,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,CLOCK_BOTTLE_PIN_OUT,Bit_RESET)
-//金属电控锁
-#define LOCK_METAL_OUT(a) if(a) GPIO_WriteBit(MOTOR_GPIO,CLOCK_METAL_PIN_OUT,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,CLOCK_METAL_PIN_OUT,Bit_RESET)
-//纸类电控锁
-#define LOCK_PAPER_OUT(a) if(a) GPIO_WriteBit(MOTOR_GPIO,CLOCK_PAPER_PIN_OUT,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,CLOCK_PAPER_PIN_OUT,Bit_RESET)
-//板载led
+#define SIGNAL_SENSOR_0_GET_PIN GPIO_Pin_0
+#define SIGNAL_SENSOR_1_GET_PIN GPIO_Pin_1
+#define SIGNAL_SENSOR_2_GET_PIN GPIO_Pin_2
+#define SIGNAL_SENSOR_3_GET_PIN GPIO_Pin_3
+#define SIGNAL_SENSOR_4_GET_PIN GPIO_Pin_4
+#define SIGNAL_SENSOR_5_GET_PIN GPIO_Pin_5
+#define SIGNAL_SENSOR_6_GET_PIN GPIO_Pin_6
+#define SIGNAL_SENSOR_7_GET_PIN GPIO_Pin_7
+#define SIGNAL_SENSOR_8_GET_PIN GPIO_Pin_8
+#define SIGNAL_SENSOR_9_GET_PIN GPIO_Pin_9
+#define SIGNAL_SENSOR_10_GET_PIN GPIO_Pin_10
+#define SIGNAL_SENSOR_11_GET_PIN GPIO_Pin_11
+#define SIGNAL_SENSOR_12_GET_PIN GPIO_Pin_12
+#define SIGNAL_SENSOR_13_GET_PIN GPIO_Pin_13
+#define SIGNAL_SENSOR_14_GET_PIN GPIO_Pin_14
+#define SIGNAL_SENSOR_15_GET_PIN GPIO_Pin_15
+//data sensor
+#define DATA_SENSOR_RCC RCC_APB2Periph_GPIOF
+#define DATA_SENSOR_GPIO GPIOF
+
+#define DATA_SENSOR_0_SET_PIN GPIO_Pin_0
+#define DATA_SENSOR_0_GET_PIN GPIO_Pin_1
+#define DATA_SENSOR_1_SET_PIN GPIO_Pin_2
+#define DATA_SENSOR_1_GET_PIN GPIO_Pin_3
+
+//onboard led
+#define LED_RCC RCC_APB2Periph_GPIOB|RCC_APB2Periph_GPIOE
+#define LED_GPIO_A GPIOB
+#define LED_PIN_A GPIO_Pin_5	//onboard D4
+#define LED_GPIO_B GPIOE
+#define LED_PIN_B GPIO_Pin_5	//onboard D2
+
+//pwm
+#define PWM_RCC RCC_APB2Periph_GPIOC
+#define PWM_GPIO GPIOC
+#define PWM_PIN GPIO_Pin_7
+//interrupt
+#define INTERRUPT_RCC SIGNAL_SENSOR_RCC
+#define INTERRUPT_GPIO SIGNAL_SENSOR_GPIO
+#define INTERRUPT_PIN SIGNAL_SENSOR_PIN
+//adc
+#define ADC_RCC DATA_SENSOR_RCC
+#define ADC_GPIO DATA_SENSOR_GPIO
+#define ADC_SET_PIN DATA_SENSOR_0_OUT_PIN|DATA_SENSOR_1_OUT_PIN
+#define ADC_GET_PIN DATA_SENSOR_1_OUT_PIN|DATA_SENSOR_1_GET_PIN
+
+//////////////////////////////action//////////////////////////////////////////////////////////////////
+//////////////////////////////action//////////////////////////////////////////////////////////////////
+//////////////////////////////action//////////////////////////////////////////////////////////////////
+//////////////////////////////action//////////////////////////////////////////////////////////////////
+//////////////////////////////action//////////////////////////////////////////////////////////////////
+//IO
+#define SET_HIGH 1
+#define SET_LOW 0
+//motor
+#define MOTOR_0_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_A_PIN,Bit_RESET)
+#define MOTOR_0_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_B_PIN,Bit_RESET)
+#define MOTOR_1_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_A_PIN,Bit_RESET)
+#define MOTOR_1_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_B_PIN,Bit_RESET)
+#define MOTOR_2_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_A_PIN,Bit_RESET)
+#define MOTOR_2_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_B_PIN,Bit_RESET)
+#define MOTOR_3_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_A_PIN,Bit_RESET)
+#define MOTOR_3_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_B_PIN,Bit_RESET)
+//relay
+#define RELAY_0_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_0_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_0_OUT_PIN,Bit_RESET)
+#define RELAY_1_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_1_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_1_OUT_PIN,Bit_RESET)
+#define RELAY_2_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_2_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_2_OUT_PIN,Bit_RESET)
+//signal sensor
+#define SIGNAL_SENSOR_0_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_0_GET_PIN)
+#define SIGNAL_SENSOR_1_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_1_GET_PIN)
+#define SIGNAL_SENSOR_2_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_2_GET_PIN)
+#define SIGNAL_SENSOR_3_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_3_GET_PIN)
+#define SIGNAL_SENSOR_4_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_4_GET_PIN)
+#define SIGNAL_SENSOR_5_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_5_GET_PIN)
+#define SIGNAL_SENSOR_6_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_6_GET_PIN)
+#define SIGNAL_SENSOR_7_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_7_GET_PIN)
+#define SIGNAL_SENSOR_8_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_8_GET_PIN)
+#define SIGNAL_SENSOR_9_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_9_GET_PIN)
+#define SIGNAL_SENSOR_10_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_10_GET_PIN)
+#define SIGNAL_SENSOR_11_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_11_GET_PIN)
+#define SIGNAL_SENSOR_12_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_12_GET_PIN)
+#define SIGNAL_SENSOR_13_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_13_GET_PIN)
+#define SIGNAL_SENSOR_14_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_14_GET_PIN)
+#define SIGNAL_SENSOR_15_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_15_GET_PIN)
+//data sensor
+#define DATA_SENSOR_0_SET(a) if(a) GPIO_WriteBit(DATA_SENSOR_GPIO,DATA_SENSOR_0_SET_PIN,Bit_SET); else GPIO_WriteBit(DATA_SENSOR_GPIO,DATA_SENSOR_0_SET_PIN,Bit_RESET)
+#define DATA_SENSOR_0_GET GPIO_ReadInputDataBit(DATA_SENSOR_GPIO,DATA_SENSOR_0_GET_PIN)
+#define DATA_SENSOR_1_SET(a) if(a) GPIO_WriteBit(DATA_SENSOR_GPIO,DATA_SENSOR_1_SET_PIN,Bit_SET); else GPIO_WriteBit(DATA_SENSOR_GPIO,DATA_SENSOR_1_SET_PIN,Bit_RESET)
+#define DATA_SENSOR_1_GET GPIO_ReadInputDataBit(DATA_SENSOR_GPIO,DATA_SENSOR_1_GET_PIN)
+
+//onboard led
 #define LED_A(a) if(a) GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_SET); else GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,Bit_RESET)
+#define LED_A_REVERSE GPIO_WriteBit(LED_GPIO_A,LED_PIN_A,(BitAction)(1-GPIO_ReadInputDataBit(LED_GPIO_A,LED_PIN_A)));
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
-//HX711
-//金属称重
-#define METAL_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
-#define METAL_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
-//纸类称重
-#define PAPER_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
-#define PAPER_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
+#define LED_B_REVERSE GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,(BitAction)(1-GPIO_ReadInputDataBit(LED_GPIO_B,LED_PIN_B)));
 
+//pwm
+#define PWM_0_OUTPUT_REVERSE GPIO_WriteBit(PWM_GPIO,PWM_PIN,(BitAction)(1-GPIO_ReadInputDataBit(PWM_GPIO,PWM_PIN)));
 
 #endif
