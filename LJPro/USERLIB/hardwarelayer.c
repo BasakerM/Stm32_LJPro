@@ -1,4 +1,4 @@
-#include "driver.h"
+#include "hardwarelayer.h"
 
 //
 //	控制硬件状态
@@ -166,7 +166,7 @@ unsigned int get_voltage_value(enum_hardware_type ht)
 				adc = 0;
 			}
 		break;
-		case enum_ht_data_sensor_0:
+		case enum_ht_data_sensor_1:
 			for(unsigned char i = 0;i < count;i++)
 			{
 				DATA_SENSOR_1_SET(SET_LOW);

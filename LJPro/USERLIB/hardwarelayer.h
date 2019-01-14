@@ -1,5 +1,5 @@
-#ifndef _driver_h
-#define _driver_h
+#ifndef _hardwarelayer_h
+#define _hardwarelayer_h
 
 #include <stm32f10x.h>
 #include "systick.h"
@@ -16,7 +16,7 @@ typedef enum
 	enum_ht_signal_sensor_0, enum_ht_signal_sensor_1, enum_ht_signal_sensor_2, enum_ht_signal_sensor_3,
 	enum_ht_signal_sensor_4, enum_ht_signal_sensor_5, enum_ht_signal_sensor_6, enum_ht_signal_sensor_7,
 	enum_ht_signal_sensor_8, enum_ht_signal_sensor_9, enum_ht_signal_sensor_10, enum_ht_signal_sensor_11,
-	enum_ht_signal_sensor_12, enum_ht_signal_sensor_13, enum_ht_signal_sensor_14, enum_ht_signal_sensor_15
+	enum_ht_signal_sensor_12, enum_ht_signal_sensor_13, enum_ht_signal_sensor_14, enum_ht_signal_sensor_15,
 	//data sensor
 	enum_ht_data_sensor_0, enum_ht_data_sensor_1
 }enum_hardware_type;
@@ -123,8 +123,8 @@ void exti_init(void);
 //adc
 #define ADC_RCC DATA_SENSOR_RCC
 #define ADC_GPIO DATA_SENSOR_GPIO
-#define ADC_SET_PIN DATA_SENSOR_0_OUT_PIN|DATA_SENSOR_1_OUT_PIN
-#define ADC_GET_PIN DATA_SENSOR_1_OUT_PIN|DATA_SENSOR_1_GET_PIN
+#define ADC_SET_PIN DATA_SENSOR_0_SET_PIN|DATA_SENSOR_1_SET_PIN
+#define ADC_GET_PIN DATA_SENSOR_0_GET_PIN|DATA_SENSOR_1_GET_PIN
 
 //////////////////////////////action//////////////////////////////////////////////////////////////////
 //////////////////////////////action//////////////////////////////////////////////////////////////////
@@ -135,18 +135,18 @@ void exti_init(void);
 #define SET_HIGH 1
 #define SET_LOW 0
 //motor
-#define MOTOR_0_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_A_PIN,Bit_RESET)
-#define MOTOR_0_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_OUT_B_PIN,Bit_RESET)
-#define MOTOR_1_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_A_PIN,Bit_RESET)
-#define MOTOR_1_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_OUT_B_PIN,Bit_RESET)
-#define MOTOR_2_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_A_PIN,Bit_RESET)
-#define MOTOR_2_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_OUT_B_PIN,Bit_RESET)
-#define MOTOR_3_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_A_PIN,Bit_RESET)
-#define MOTOR_3_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_OUT_B_PIN,Bit_RESET)
+#define MOTOR_0_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_SET_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_SET_A_PIN,Bit_RESET)
+#define MOTOR_0_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_SET_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_0_SET_B_PIN,Bit_RESET)
+#define MOTOR_1_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_SET_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_SET_A_PIN,Bit_RESET)
+#define MOTOR_1_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_SET_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_1_SET_B_PIN,Bit_RESET)
+#define MOTOR_2_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_SET_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_SET_A_PIN,Bit_RESET)
+#define MOTOR_2_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_SET_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_2_SET_B_PIN,Bit_RESET)
+#define MOTOR_3_SET_A(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_SET_A_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_SET_A_PIN,Bit_RESET)
+#define MOTOR_3_SET_B(a) if(a) GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_SET_B_PIN,Bit_SET); else GPIO_WriteBit(MOTOR_GPIO,MOTOR_3_SET_B_PIN,Bit_RESET)
 //relay
-#define RELAY_0_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_0_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_0_OUT_PIN,Bit_RESET)
-#define RELAY_1_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_1_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_1_OUT_PIN,Bit_RESET)
-#define RELAY_2_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_2_OUT_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_2_OUT_PIN,Bit_RESET)
+#define RELAY_0_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_0_SET_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_0_SET_PIN,Bit_RESET)
+#define RELAY_1_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_1_SET_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_1_SET_PIN,Bit_RESET)
+#define RELAY_2_SET(a) if(a) GPIO_WriteBit(RELAY_GPIO,RELAY_2_SET_PIN,Bit_SET); else GPIO_WriteBit(RELAY_GPIO,RELAY_2_SET_PIN,Bit_RESET)
 //signal sensor
 #define SIGNAL_SENSOR_0_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_0_GET_PIN)
 #define SIGNAL_SENSOR_1_GET GPIO_ReadInputDataBit(SIGNAL_SENSOR_GPIO,SIGNAL_SENSOR_1_GET_PIN)

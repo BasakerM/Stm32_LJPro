@@ -1,23 +1,25 @@
-#include "function.h"
-
+//#include "driver.h"
+/*
 unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat);
 void usart_parsedat(unsigned char usart_dat,unsigned char* buff);
 
 unsigned char usart_rec_buff[4] = {0x00};
 unsigned char usart_dat_rec = 0x00;
-
+*/
 int main()
 {
+	/*
 	function_init();
 	
 	while(1)
 	{
 		if(usart_getdat(USART_M,&usart_dat_rec))	//检测并接收串口数据
 			usart_parsedat(usart_dat_rec,usart_rec_buff);	//解析串口数据,若接收到规定的数据包则提取目标地址、操作码、数据包
-		function(usart_rec_buff);
+		//function(usart_rec_buff);
 	}
+	*/
 }
-
+/*
 unsigned char crc_buff[6] = {0x08,0xA1,0x00,0x00,0x00,0x00};	//用于计算crc的数据缓冲区
 unsigned short crc_result = 0x0000;	//crc的计算结果
 unsigned char datapack_index = 0;	//数据包的下标
@@ -90,3 +92,4 @@ unsigned char usart_getdat(USART_TypeDef* USARTx,unsigned char* usart_dat)
 	}
 	return 0;
 }
+*/

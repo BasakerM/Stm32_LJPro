@@ -335,7 +335,7 @@
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F10X_HD</Define>
               <Undefine></Undefine>
-              <IncludePath>..\PROJECT;..\USERLIB;..\CMSIS;..\FWLIB\inc</IncludePath>
+              <IncludePath>..\PROJECT;..\CMSIS;..\FWLIB\inc;..\USERLIB</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -377,23 +377,18 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>USER</GroupName>
+          <GroupName>APP</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
             </File>
-            <File>
-              <FileName>function.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USERLIB\function.c</FilePath>
-            </File>
-            <File>
-              <FileName>driver.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\USERLIB\driver.c</FilePath>
-            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>DRIVER</GroupName>
+          <Files>
             <File>
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
@@ -403,6 +398,16 @@
               <FileName>systick.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\USERLIB\systick.c</FilePath>
+            </File>
+            <File>
+              <FileName>hardwarelayer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USERLIB\hardwarelayer.c</FilePath>
+            </File>
+            <File>
+              <FileName>softwarelayer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\USERLIB\softwarelayer.c</FilePath>
             </File>
           </Files>
         </Group>

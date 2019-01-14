@@ -1,9 +1,9 @@
 --cpu Cortex-M3
 ".\main.o"
-".\function.o"
-".\driver.o"
 ".\usart.o"
 ".\systick.o"
+".\hardwarelayer.o"
+".\softwarelayer.o"
 ".\core_cm3.o"
 ".\stm32f10x_it.o"
 ".\system_stm32f10x.o"
