@@ -20,7 +20,7 @@ enum enum_event
 enum enum_device
 {
 	bottle_motor_door = 0,bottle_motor_recycle = 1,bottle_lock = 2,
-	bottle_sensor_opendoor = 3,bottle_sensor_closedoor = 4,
+	bottle_sensor_opendoor = 3,bottle_sensor_closedoor = 4,bottle_sensor_hand = 14,
 	bottle_sensor_one = 5,bottle_sensor_two = 6,bottle_sensor_three = 7,
 	metal_motor = 8,metal_lock = 9,metal_sensor = 10,
 	paper_motor = 11,paper_lock = 12,paper_sensor = 13
@@ -38,7 +38,7 @@ enum enum_status
 void motor_ctrl(enum enum_device device,enum enum_status mrun);
 enum enum_status device_status_get(enum enum_device device);
 //void motor_pd_ctrl(enum enum_status mrun);
-unsigned int get_weight(void);
+unsigned long get_weight(void);
 void driver_init(void);
 void hx711_init(void);
 void motor_init(void);
@@ -85,10 +85,10 @@ void exti_init(void);
 #define PAPER_WEIGH_CK_PIN GPIO_Pin_0
 #define PAPER_WEIGH_DO_PIN GPIO_Pin_1
 //HX711
-#define WEIGH_RCC RCC_APB2Periph_GPIOE
-#define WEIGH_GPIO GPIOE
-#define WEIGH_CK_PIN METAL_WEIGHT_CK_PIN|PAPER_WEIGHT_CK_PIN
-#define WEIGH_DO_PIN METAL_WEIGHT_DO_PIN|PAPER_WEIGHT_DO_PIN
+#define HX711_RCC RCC_APB2Periph_GPIOE
+#define HX711_GPIO GPIOE
+#define HX711_CK_PIN GPIO_Pin_0//METAL_WEIGHT_CK_PIN|PAPER_WEIGHT_CK_PIN
+#define HX711_DO_PIN GPIO_Pin_1//METAL_WEIGHT_DO_PIN|PAPER_WEIGHT_DO_PIN
 
 ////////////////////////////// IO 操作/////////////////////////////////
 //电平宏
@@ -118,11 +118,7 @@ void exti_init(void);
 #define LED_B(a) if(a) GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_SET); else GPIO_WriteBit(LED_GPIO_B,LED_PIN_B,Bit_RESET)
 //HX711
 //金属称重
-#define METAL_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
-#define METAL_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
-//纸类称重
-#define PAPER_WEIGHT_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
-#define PAPER_WEIGHT_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
-
+#define HX711_CK_OUT(a) if(a) GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_SET); else GPIO_WriteBit(HX711_GPIO,HX711_CK_PIN,Bit_RESET)
+#define HX711_DO_GET GPIO_ReadInputDataBit(HX711_GPIO,HX711_DO_PIN)
 
 #endif

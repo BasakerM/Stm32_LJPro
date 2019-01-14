@@ -28,6 +28,16 @@ unsigned char paper_addr = 0xA4;
 unsigned char bottle_open_door_flag = 0;
 void bottle_opendoor(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	usart_ack(usart_Buff_Send,bottle_addr,0xb1,0x00,0x00);	//发送响应
+	timeout_start(1);
+	while(!timeout_status_get());
+	usart_ack(usart_Buff_Send,bottle_addr,0xb2,0xff,0xff);	//发送成功消息
+	timeout_start(1);
+	while(!timeout_status_get());
+	*e_flag = event_bottle_put;	//切换事件到放入
+#endif
+#ifdef RELEASE
 	if(bottle_open_door_flag)	//非首次进入
 	{
 		if(device_status_get(bottle_sensor_opendoor) == open)	//检查限位器状态
@@ -55,6 +65,7 @@ void bottle_opendoor(enum enum_event* e_flag,unsigned char* buff)
 		timeout_start(OPEN_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_z);	//开门--正转
 	}
+#endif
 }
 
 //
@@ -63,6 +74,13 @@ void bottle_opendoor(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_put_flag = 0;
 void bottle_put(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	usart_ack(usart_Buff_Send,bottle_addr,0xb9,0x00,0x00);	//发送刷新消息
+	timeout_start(1);
+	while(!timeout_status_get());
+	*e_flag = event_bottle_scanfcode;	//切换事件到扫码
+#endif
+#ifdef RELEASE
 	if(bottle_put_flag)
 	{
 		if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
@@ -84,6 +102,7 @@ void bottle_put(enum enum_event* e_flag,unsigned char* buff)
 		bottle_put_flag = 1;
 		timeout_start(BOTTLE_PUT_DELAY);	//开启超时
 	}
+#endif
 }
 
 //
@@ -92,6 +111,13 @@ void bottle_put(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_scanfcode_flag = 0;
 void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	usart_ack(usart_Buff_Send,bottle_addr,0xbb,0x00,0x00);	//发送获取扫码结果消息
+	timeout_start(1);
+	while(!timeout_status_get());
+	*e_flag = event_bottle_ack;	//切换事件到确认
+#endif
+#ifdef RELEASE
 	if(bottle_scanfcode_flag)	
 	{
 		if(device_status_get(bottle_sensor_two) == on)	//检查光电2状态
@@ -116,6 +142,7 @@ void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 		motor_ctrl(bottle_motor_recycle,run_z);	//送入扫码--正转
 		timeout_start(SCANF_CODE_DELAY);	//开启超时
 	}
+#endif
 }
 
 //
@@ -124,6 +151,16 @@ void bottle_scanfcode(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_ack_flag = 0;
 void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	timeout_start(1);
+	while(!timeout_status_get())
+	{
+		if(buff[REC_BUFF_INDEX_CODE] == 0xbc)
+		usart_ack(usart_Buff_Send,bottle_addr,0xbc,buff[REC_BUFF_INDEX_DAT0],buff[REC_BUFF_INDEX_DAT1]);	//发送响应
+	}
+	*e_flag = event_bottle_recycle;	//切换事件到回收
+#endif
+#ifdef RELEASE
 	if(bottle_ack_flag)	
 	{
 		if(buff[REC_BUFF_INDEX_CODE] == 0xbc && buff[REC_BUFF_INDEX_DAT0] == 0xff && buff[REC_BUFF_INDEX_DAT1] == 0xff)	//成功
@@ -155,6 +192,7 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 		bottle_ack_flag = 1;
 		timeout_start(SCANF_CODE_ACK_DELAY);	//开启超时
 	}
+#endif
 }
 
 //
@@ -163,6 +201,13 @@ void bottle_ack(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_recycle_flag = 0;
 void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x00);	//正常回收情况下发送回收成功的消息
+	timeout_start(1);
+	while(!timeout_status_get());
+	*e_flag = event_none;	//切换事件到放入
+#endif
+#ifdef RELEASE
 	bottle_recycle_flag = 1;
 	if(buff[REC_BUFF_INDEX_CODE] == 0xc1) usart_ack(usart_Buff_Send,bottle_addr,0xc1,0x00,0x00);	//强制回收情况下发送应答消息
 	timeout_start(RECYCLE_DELAY);	//开启超时
@@ -203,6 +248,7 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 			}
 		}
 	}
+#endif
 }
 
 //
@@ -211,6 +257,33 @@ void bottle_recycle(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_fail_flag = 0;
 void bottle_fail(enum enum_event* e_flag,unsigned char* buff)
 {
+	if(bottle_fail_flag == 2)
+	{
+		if(device_status_get(bottle_sensor_one) == off)	//检查光电1状态
+		{
+			bottle_fail_flag = 0;
+			usart_ack(usart_Buff_Send,bottle_addr,0xBF,0x00,0x01);	//发送用户取回物品的消息
+			*e_flag = event_bottle_put;	//切换事件到放入
+		}
+	}
+	else if(bottle_fail_flag == 1)
+	{
+		if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
+		{
+			bottle_fail_flag = 2;
+//			timeout_start(0.5);
+//			while(!timeout_status_get());
+			motor_ctrl(bottle_motor_recycle,run_s);
+			timeout_end();
+		}
+	}
+	else
+	{
+		bottle_fail_flag = 1;
+		motor_ctrl(bottle_motor_recycle,run_f);//皮带倒转
+		timeout_start(FAIL_DELAY);	//开启超时
+	}
+	/*
 	if(bottle_fail_flag)
 	{
 		if(device_status_get(bottle_sensor_two) == off)	//检查光电2状态
@@ -231,6 +304,7 @@ void bottle_fail(enum enum_event* e_flag,unsigned char* buff)
 		bottle_fail_flag = 1;
 		timeout_start(FAIL_DELAY);	//开启超时
 	}
+	*/
 }
 
 //
@@ -239,8 +313,22 @@ void bottle_fail(enum enum_event* e_flag,unsigned char* buff)
 unsigned char bottle_closedoor_flag = 0;
 void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 {
+#ifdef DEBUG
+	usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
+	timeout_start(1);
+	while(!timeout_status_get());
+	usart_ack(usart_Buff_Send,bottle_addr,0xb4,0xff,0xff);	//发送成功消息(正常回收情况下)
+	*e_flag = event_none;	//切换事件到none
+#endif
+#ifdef RELEASE
 	if(bottle_closedoor_flag)	//非首次进入
 	{
+		if(device_status_get(bottle_sensor_hand) == on)	//检查限位器状态
+		{
+			bottle_closedoor_flag = 0;
+			motor_ctrl(bottle_motor_door,run_s);	//停止转动
+			*e_flag = event_bottle_opendoor;	//切换事件到开门
+		}
 		if(device_status_get(bottle_sensor_closedoor) == close)	//检查限位器状态
 		{
 			bottle_closedoor_flag = 0;
@@ -262,18 +350,27 @@ void bottle_closedoor(enum enum_event* e_flag,unsigned char* buff)
 	}
 	else	//首次进入
 	{
-		if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
-		{
-			usart_ack(usart_Buff_Send,bottle_addr,0xb9,0x00,0x00);	//发送刷新消息
-			*e_flag = event_none;	//切换事件到none
-			return;
-		}
+		
 		bottle_closedoor_flag = 1;
-		if(buff[REC_BUFF_INDEX_DAT1] == 0x01) usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x01);	//发送响应(强制回收情况下)
-		else usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
+		if(buff[REC_BUFF_INDEX_DAT1] == 0x00)
+		{
+			usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x00);	//发送响应
+
+			if(device_status_get(bottle_sensor_one) == on)	//检查光电1状态
+			{
+				usart_ack(usart_Buff_Send,bottle_addr,0xb9,0x00,0x00);	//发送刷新消息
+				*e_flag = event_none;	//切换事件到none
+				return;
+			}
+		}
+		else 
+		{
+			usart_ack(usart_Buff_Send,bottle_addr,0xb3,0x00,0x01);	//发送响应(强制回收情况下)
+		}
 		timeout_start(CLOSE_DOOR_DELAY);	//开启超时
 		motor_ctrl(bottle_motor_door,run_f);	//关门--反转
 	}
+#endif
 }
 
 //
@@ -464,7 +561,7 @@ void metal_weigh(enum enum_event* e_flag,unsigned char* buff)
 	if(buff[REC_BUFF_INDEX_DAT1])	//关门后的称重
 	{
 		weight = get_weight() - weight_base;
-		weight *= 41;
+		weight *= 418.0/10;
 		s_buff[8] = (unsigned char)weight>>8;
 		s_buff[9] = (unsigned char)(weight&0x00ff);
 	}
@@ -795,30 +892,34 @@ void event_exe(enum enum_event* e_flag,unsigned char* buff)
 {
 	switch(*e_flag)
 	{
+		#ifdef BOTTLE
 		//瓶子
-		case event_bottle_opendoor: bottle_opendoor(e_flag,buff); break;
-		case event_bottle_put: bottle_put(e_flag,buff); break;
-		case event_bottle_scanfcode: bottle_scanfcode(e_flag,buff); break;
-		case event_bottle_ack: bottle_ack(e_flag,buff); break;
-		case event_bottle_recycle: bottle_recycle(e_flag,buff); break;
-		case event_bottle_fail: bottle_fail(e_flag,buff); break;
-		case event_bottle_closedoor: bottle_closedoor(e_flag,buff); break;
-		case event_bottle_openmanagedoor: bottle_manage_opendoor(e_flag,buff); break;
-		case event_bottle_closemanagedoor: bottle_manage_closedoor(e_flag,buff); break;
+			case event_bottle_opendoor: bottle_opendoor(e_flag,buff); break;
+			case event_bottle_put: bottle_put(e_flag,buff); break;
+			case event_bottle_scanfcode: bottle_scanfcode(e_flag,buff); break;
+			case event_bottle_ack: bottle_ack(e_flag,buff); break;
+			case event_bottle_recycle: bottle_recycle(e_flag,buff); break;
+			case event_bottle_fail: bottle_fail(e_flag,buff); break;
+			case event_bottle_closedoor: bottle_closedoor(e_flag,buff); break;
+			case event_bottle_openmanagedoor: bottle_manage_opendoor(e_flag,buff); break;
+			case event_bottle_closemanagedoor: bottle_manage_closedoor(e_flag,buff); break;
+		#endif
+		#ifdef METAL_PAPER
 		//金属
-		case event_metal_opendoor: metal_opendoor(e_flag,buff); break;
-		case event_metal_put: metal_put(e_flag,buff); break;
-		case event_metal_closedoor: metal_closedoor(e_flag,buff); break;
-		case event_metal_weigh: metal_weigh(e_flag,buff); break;
-		case event_metal_openmanagedoor: metal_manage_opendoor(e_flag,buff); break;
-		case event_metal_closemanagedoor: metal_manage_closedoor(e_flag,buff); break;
+			case event_metal_opendoor: metal_opendoor(e_flag,buff); break;
+			case event_metal_put: metal_put(e_flag,buff); break;
+			case event_metal_closedoor: metal_closedoor(e_flag,buff); break;
+			case event_metal_weigh: metal_weigh(e_flag,buff); break;
+			case event_metal_openmanagedoor: metal_manage_opendoor(e_flag,buff); break;
+			case event_metal_closemanagedoor: metal_manage_closedoor(e_flag,buff); break;
 		//纸类
-		case event_paper_opendoor: paper_opendoor(e_flag,buff); break;
-		case event_paper_put: paper_put(e_flag,buff); break;
-		case event_paper_closedoor: paper_closedoor(e_flag,buff); break;
-		case event_paper_weigh: paper_weigh(e_flag,buff); break;
-		case event_paper_openmanagedoor: paper_manage_opendoor(e_flag,buff); break;
-		case event_paper_closemanagedoor: paper_manage_closedoor(e_flag,buff); break;
+			case event_paper_opendoor: paper_opendoor(e_flag,buff); break;
+			case event_paper_put: paper_put(e_flag,buff); break;
+			case event_paper_closedoor: paper_closedoor(e_flag,buff); break;
+			case event_paper_weigh: paper_weigh(e_flag,buff); break;
+			case event_paper_openmanagedoor: paper_manage_opendoor(e_flag,buff); break;
+			case event_paper_closemanagedoor: paper_manage_closedoor(e_flag,buff); break;
+		#endif
 		//
 		case event_none: buff[REC_BUFF_INDEX_CODE] = 0x00; old_code_bottle = 0x00; 
 						 old_code_metal = 0x00; old_code_paper = 0x00; break;

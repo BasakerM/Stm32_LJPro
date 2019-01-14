@@ -42,11 +42,6 @@ void motor_ctrl(enum enum_device device,enum enum_status mrun)
 			case run_z: MOTOR_BOTTLE_P_OUT1(HIGH); MOTOR_BOTTLE_P_OUT2(LOW); break;	//正转
 			case run_f: MOTOR_BOTTLE_P_OUT1(LOW); MOTOR_BOTTLE_P_OUT2(HIGH); break;	//反转
 			case run_s: MOTOR_BOTTLE_P_OUT1(LOW); MOTOR_BOTTLE_P_OUT2(LOW); break;	//停止
-			/*
-			case run_z: motor_pd_mode = run_z; break;
-			case run_f: motor_pd_mode = run_f; break;
-			case run_s: motor_pd_mode = run_s;  break;
-			*/
 		}
 	}
 	else if(device == bottle_lock)	//瓶子管理员门
@@ -84,9 +79,9 @@ enum enum_status exti_line4 = off;	//瓶子光电3
 enum enum_status exti_line5 = off;	//瓶子限位器1
 enum enum_status exti_line6 = off;	//瓶子限位器2
 enum enum_status exti_line7 = off;	//瓶子限位器3
+enum enum_status exti_line8 = off;	//瓶子限位器4
 
-enum enum_status exti_line10 = off;	//瓶子限位器4
-enum enum_status exti_line11 = off;	//瓶子限位器5--管理员门
+enum enum_status exti_line11 = off;	//瓶子限位器6--管理员门
 enum enum_status exti_line12 = off;	//金属限位器--管理员门
 enum enum_status exti_line13 = off;	//纸类限位器--管理员门
 //
@@ -98,14 +93,20 @@ enum enum_status device_status_get(enum enum_device d_flag)
 	{
 		//瓶子开门////////////////////////////////
 		case bottle_sensor_opendoor:
-			if(exti_line5 == on || exti_line6 == on)
+			if (exti_line5 == on)
 				return open;
 			else
 				return exeing;
 		//瓶子关门////////////////////////////////
 		case bottle_sensor_closedoor:
-			if(exti_line7 == on)
+			if(exti_line6 == on)
 				return close;
+			else
+				return exeing;
+		//瓶子防夹0////////////////////////////////
+		case bottle_sensor_hand:
+			if(exti_line7 == on || exti_line8 == on)
+				return on;
 			else
 				return exeing;
 		//瓶子光电1////////////////////////////////
@@ -160,35 +161,16 @@ enum enum_status device_status_get(enum enum_device d_flag)
 	return exeing;
 }
 
-/*
-unsigned char motor_pd_z_setp[4] = {0x01,0x02,0x04,0x08};
-unsigned char motor_pd_f_setp[4] = {0x08,0x04,0x02,0x01};
-unsigned char motor_pd_setp = 0;
-//
-//	皮带电机控制
-//
-void motor_pd_ctrl(enum enum_status mrun)
-{
-	GPIO_Write(MOTOR_PD_GPIO,0x00);
-	switch(mrun)
-	{
-		case run_z: GPIO_Write(MOTOR_PD_GPIO,motor_pd_z_setp[motor_pd_setp++]); break;
-		case run_f: GPIO_Write(MOTOR_PD_GPIO,motor_pd_f_setp[motor_pd_setp++]); break;
-		case run_s: GPIO_Write(MOTOR_PD_GPIO,0x00); break;
-	}
-	if(motor_pd_setp == 4) motor_pd_setp = 0;
-}
-*/
-
 //
 //	HX711 读取重量
 //
-unsigned int get_weight(void)
+unsigned long get_weight(void)
 {
 	unsigned long adc = 0;
 	unsigned long sum = 0;
+	unsigned char count = 10;
 
-	for(unsigned char i = 0;i < 5;i++)
+	for(unsigned char i = 0;i < count;i++)
 	{
 		HX711_CK_OUT(0);
 		while(HX711_DO_GET);
@@ -205,16 +187,16 @@ unsigned int get_weight(void)
 		sum += (3.3/16777216)*adc*1000;
 		adc = 0;
 	}
-	sum /= 5;
-	
-	/*unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
+	sum /= count;
+	/*
+	unsigned char num[11] = {'0','.','0','0','0',' ','V','\r','\n','\0'};
 	num[0] = sum/1000 + '0';
 	num[2] = (sum/100)%10 + '0';
 	num[3] = (sum/10)%10 + '0';
 	num[4] = (sum/1)%10 + '0';
 	usart_send_str(USART_M,"now voltage: ");
-	usart_send_str(USART_M,num);*/
-
+	usart_send_str(USART_M,num);
+	*/
 	return sum;
 }
 
@@ -238,23 +220,25 @@ void driver_init(void)
 	tim_init();
 	hx711_init();
 	
-	
-	/*unsigned int weight = 0;
+	/*
+	unsigned long weight = 0;
 	unsigned long weight_base = 0;
 	get_weight();
 	get_weight();
-	weight_base = get_weight();
+	weight_base = get_weight();*/
 
-	while(1)
+	/*while(1)
 	{
 		//get_weight();
-		weight = get_weight() - weight_base;
-		weight *= 31.6667;
+		weight = weight_base - get_weight();
+		weight = 418*weight;
 		
-		unsigned char num[8] = {'0','0','0',' ','g','\r','\n','\0'};
-		num[0] = (weight/100)%10 + '0';
-		num[1] = (weight/10)%10 + '0';
-		num[2] = (weight)%10 + '0';
+		unsigned char num[10] = {'0','0','0','0','0',' ','g','\r','\n','\0'};
+		num[0] = (weight/10000)%10 + '0';
+		num[1] = (weight/1000)%10 + '0';
+		num[2] = (weight/100)%10 + '0';
+		num[3] = (weight/10)%10 + '0';
+		num[4] = (weight/1)%10 + '0';
 		usart_send_str(USART_M,"Weight: ");
 		usart_send_str(USART_M,num);
 		
@@ -428,6 +412,10 @@ void exti_init(void)
 	//中断线7为跳变沿触发---瓶子限位器3
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOD,GPIO_PinSource7);
 	EXTI_InitStructure.EXTI_Line=EXTI_Line7;
+	EXTI_Init(&EXTI_InitStructure);
+	//中断线7为跳变沿触发---瓶子限位器4
+	GPIO_EXTILineConfig(GPIO_PortSourceGPIOD,GPIO_PinSource8);
+	EXTI_InitStructure.EXTI_Line=EXTI_Line8;
 	EXTI_Init(&EXTI_InitStructure);
 
 	//中断线10为跳变沿触发---瓶子限位器4
@@ -613,6 +601,15 @@ void EXTI9_5_IRQHandler()
 			{exti_line7 = on; LED_A(on);}
 		EXTI_ClearITPendingBit(EXTI_Line7);
 	}
+	//瓶子限位器4
+	if(EXTI_GetITStatus(EXTI_Line8))
+	{
+		if(GPIO_ReadInputDataBit(INTERRUPT_GPIO,GPIO_Pin_8) == Bit_SET)
+			{exti_line8 = off; LED_A(off);}
+		else
+			{exti_line8 = on; LED_A(on);}
+		EXTI_ClearITPendingBit(EXTI_Line8);
+	}
 }
 
 //
@@ -621,15 +618,6 @@ void EXTI9_5_IRQHandler()
 //unsigned long step = 0;
 void EXTI15_10_IRQHandler()
 {
-	//瓶子限位器4
-	if(EXTI_GetITStatus(EXTI_Line10))	//判断中断线
-	{
-		if(GPIO_ReadInputDataBit(INTERRUPT_GPIO,GPIO_Pin_10) == Bit_SET)
-			{exti_line10 = off; LED_A(off);}
-		else
-			{exti_line10 = on; LED_A(on);}
-		EXTI_ClearITPendingBit(EXTI_Line10);	//清楚中断标志
-	}
 	//瓶子限位器5
 	if(EXTI_GetITStatus(EXTI_Line11))	//判断中断线
 	{

@@ -4,9 +4,12 @@
 #include <stm32f10x.h>
 #include "driver.h"
 
+//#define DEBUG
+#define RELEASE
+
 //该处的宏用于设备选择预编译,若为瓶子部分的主控板则注释第二个宏
 #define BOTTLE
-#define METAL_PAPER
+//#define METAL_PAPER
 
 #define OPEN_DOOR_DELAY 20
 #define BOTTLE_PUT_DELAY 60
@@ -16,9 +19,9 @@
 #define FAIL_DELAY 2
 #define CLOSE_DOOR_DELAY 20
 
-#define METAL_OPEN_DOOR_DELAY 3
+#define METAL_OPEN_DOOR_DELAY 7
 #define METAL_PUT_DELAY 80
-#define METAL_CLOSE_DOOR_DELAY 3
+#define METAL_CLOSE_DOOR_DELAY 7
 
 #define REC_BUFF_INDEX_ADDR 0
 #define REC_BUFF_INDEX_CODE 1
